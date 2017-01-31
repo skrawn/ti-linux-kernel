@@ -1,0 +1,264 @@
+/*
+ * Copyright (C) 2011 Texas Instruments Incorporated - http://www.ti.com/
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ */
+/dts-v1/;
+
+#include "am3517.dtsi"
+
+/ {
+	model = "HALO AM3517";
+	compatible = "asd,halo-am3517", "ti,am3517", "ti,omap3";
+
+	memory {
+		device_type = "memory";
+		reg = <0x80000000 0x10000000>; /* 256 MB */
+	};
+
+    fpga_spectro: fpga_spectro {
+        compatible = "asd,halo";
+
+        pinctrl-names = "default";
+        pinctrl-0 = <&halo_fpga_pins>;
+
+        bidi-gpios = <&gpio2 4 0
+                      &gpio2 5 0
+                      &gpio2 6 0
+                      &gpio2 7 0
+                      &gpio2 8 0
+                      &gpio2 9 0
+                      &gpio2 10 0
+                      &gpio2 11 0>;
+        ndata-gpios = <&gpio2 22 GPIO_ACTIVE_LOW>;
+        naddr-gpios = <&gpio2 2 GPIO_ACTIVE_LOW>;
+        nwrite-gpios = <&gpio2 3 GPIO_ACTIVE_LOW>;
+        nwait-gpios = <&gpio2 31 0>;
+        nreset-gpios = <&gpio5 22 GPIO_ACTIVE_LOW>;
+        nint3-gpios = <&gpio5 23 0>;
+        nint-gpios = <&gpio2 29 0>;
+    };
+};
+
+&omap3_pmx_core {
+    pinctrl-names = "default";
+    pinctrl-0 = <&halo_fpga_pins>;
+
+    otg_drv_vbus: pinmux_otg_drv_vbus {
+        pinctrl-single,pins = <
+            0x212 (PIN_OUTPUT | MUX_MODE0)  /* usb0_drvvbus.usb0_drvvbus */
+        >;
+    };
+
+    i2c1_pins: pinmux_i2c1_pins {
+        pinctrl-single,pins = <
+            0x18a (PIN_INPUT | MUX_MODE0)   /* i2c1_scl.i2c1_scl */
+            0x18c (PIN_INPUT | MUX_MODE0)   /* i2c1_sda.i2c1_sda */
+        >;
+    };
+
+    i2c2_pins: pinmux_i2c2_pins {
+        pinctrl-single,pins = <
+            0x18e (PIN_INPUT | MUX_MODE0)   /* i2c2_scl.i2c2_scl */
+            0x190 (PIN_INPUT | MUX_MODE0)   /* i2c2_sda.i2c2_sda */
+        >;
+    };
+
+    i2c3_pins: pinmux_i2c3_pins {
+        pinctrl-single,pins = <
+            0x192 (PIN_INPUT | MUX_MODE0)    /* i2c3_scl.i2c3_scl */
+            0x194 (PIN_INPUT | MUX_MODE0)    /* i2c3_sda.i2c3_sda */
+        >;
+    };
+
+    /* This is the one on the analog board */
+    ana_mux_pins: pinmux_ana_mux_pins {
+        pinctrl-single,pins = <
+            0x112 (PIN_INPUT_PULLUP | MUX_MODE4)    /* mcbsp2_dx.gpio_119 - GPIO_INT3# */
+        >;
+    };
+
+    /* This is the one on the power board */
+    pwr_mux_pins: pinmux_pwr_mux_pins {
+        pinctrl-single,pins = <
+            0x10e (PIN_INPUT_PULLUP | MUX_MODE4)    /* mcbsp2_clkx.gpio_117 - GPIO_INT1# */
+        >;
+    };
+
+    halo_fpga_pins: pinmux_halo_fpga_pins {
+        pinctrl-single,pins = <
+            0x114 (PIN_INPUT | MUX_MODE4)           /* mmc1_clk.gpio_120 - BiDi[0] */
+            0x116 (PIN_INPUT | MUX_MODE4)           /* mmc1_cmd.gpio_121 - BiDi[1] */
+            0x118 (PIN_INPUT | MUX_MODE4)           /* mmc1_dat0.gpio_122 - BiDi[2] */
+            0x11a (PIN_INPUT | MUX_MODE4)           /* mmc1_dat1.gpio_123 - BiDi[3] */
+            0x11c (PIN_INPUT | MUX_MODE4)           /* mmc1_dat2.gpio_124 - BiDi[4] */
+            0x11e (PIN_INPUT | MUX_MODE4)           /* mmc1_dat3.gpio_125 - BiDi[5]  */
+            0x120 (PIN_INPUT | MUX_MODE4)           /* mmc1_dat4.gpio_126 - BiDi[6]  */
+            0x122 (PIN_INPUT | MUX_MODE4)           /* mmc1_dat5.gpio_127 - BiDi[7]  */
+
+            0x1ca (PIN_OUTPUT_PULLUP | MUX_MODE4)   /* ccdc_data6.gpio_105 - nWRITE_STROBE */
+            0x1cc (PIN_OUTPUT_PULLUP | MUX_MODE4)   /* ccdc_data7.gpio_106 - nADDR_STROBE */
+            0x1b8 (PIN_OUTPUT_PULLUP | MUX_MODE4)   /* ccdc_hd.gpio_96 - nDATA_STROBE */
+            0x1c0 (PIN_INPUT | MUX_MODE4)           /* ccdc_data1.gpio_100 - nWAIT */
+            0x110 (PIN_OUTPUT_PULLUP | MUX_MODE4)   /* mcbsp2_dr.gpio_118 - nFGPA_RESET */
+            0x112 (PIN_INPUT_PULLUP | MUX_MODE4)    /* mcbsp2_dx.gpio_119 - nGPIO_INT3 */
+            0x126 (PIN_INPUT | MUX_MODE4)           /* mmc1_dat7.gpio_129 - INTERRUPT */
+        >;
+    };
+};
+
+&am35x_otg_hs {
+    status = "okay";
+    pinctrl-names = "default";
+    pinctrl-0 = <&otg_drv_vbus>;
+    clocks = <&hsotgusb_ick_am35xx>, <&hsotgusb_fck_am35xx>;
+    clock-names = "hsotgusb_ick", "hsotgusb_fck";
+    compatible = "ti,am35x-musb";
+};
+
+&usbhshost {
+    /* Will be initialized in pdata-quirks */
+    status = "disabled";
+};
+
+&usbhstll {
+    status = "disabled";
+};
+
+/*&aes {
+    status = "disabled";
+};*/
+
+/*&sham {
+    status = "disabled";
+};*/
+
+/*&smartreflex_core {
+    status = "disabled";
+};*/
+
+&usb_otg_hs {
+    status = "disabled";
+};
+
+&davinci_emac {
+	status = "disabled";
+};
+
+&davinci_mdio {
+	status = "disabled";
+};
+
+&i2c1 {
+	clock-frequency = <400000>;
+
+    pinctrl-names = "default";
+    pinctrl-0 = <&i2c1_pins>;
+
+    status = "okay";
+
+    s35390a: s35390a@30 {
+         compatible = "sii,s35390a";
+         reg = <0x30>;
+    };
+};
+
+&i2c2 {
+	clock-frequency = <400000>;
+
+    pinctrl-names = "default";
+    pinctrl-0 = <&i2c2_pins>;
+
+    status = "okay";
+
+    battery: smart-battery@b {
+        compatible = "ti,bq20z65", "sbs,sbs-battery";
+        reg = <0xb>;
+        battery-name = "battery";
+        sbs,poll-retry-count = <2>;
+        sbs,i2c-retry-count = <100>;
+    };
+};
+
+&i2c3 {
+    /* Will be initialized in pdata-quirks */
+    status = "disabled";
+};
+
+&mmc1 {
+	status = "disabled";
+};
+
+&mmc2 {
+    status = "disabled";
+};
+
+&mmc3 {
+    status = "disabled";
+};
+
+&gpmc {
+    ranges = <0 0 0x00000000 0x20000000>;
+
+    nand@0,0 {
+        linux,mtd-name= "micron,nand";
+        reg = <0 0 4>;  /* CS0, offset 0, IO size 4 */
+        nand-bus-width = <16>;
+        gpmc,device-width = <2>;
+        ti,nand-ecc-opt = "sw";
+
+        gpmc,cs-on-ns = <0>;
+        gpmc,cs-rd-off-ns = <36>;
+        gpmc,cs-wr-off-ns = <36>;
+
+        gpmc,adv-on-ns = <6>;
+        gpmc,adv-rd-off-ns = <24>;
+        gpmc,adv-wr-off-ns = <36>;
+
+        gpmc,we-on-ns = <6>;
+        gpmc,we-off-ns = <30>;
+
+        gpmc,oe-on-ns = <6>;
+        gpmc,oe-off-ns = <48>;
+
+        gpmc,page-burst-access-ns = <6>;
+        gpmc,access-ns = <54>;
+        gpmc,cycle2cycle-delay-ns = <60>;
+
+        gpmc,rd-cycle-ns = <72>;
+        gpmc,wr-cycle-ns = <72>;
+        gpmc,wr-access-ns = <30>;
+        gpmc,wr-data-mux-bus-ns = <0>;
+
+        #address-cells = <1>;
+        #size-cells = <1>;
+
+        partition@0 {
+            label = "xloader";
+            reg = <0 0x80000>;
+        };
+        partition@0x80000 {
+            label = "uboot";
+            reg = <0x80000 0x1e0000>;
+        };
+        partition@0x260000 {
+            label = "uboot environment";
+            reg = <0x260000 0x40000>;
+        };
+        partition@0x2a0000 {
+            label = "linux";
+            reg = <0x2a0000 0x800000>;
+        };
+        partition@0xaa0000 {
+            label = "oftree";
+            reg = <0xaa0000 0x80000>;
+        };
+        partition@0xb20000 {
+            label = "rootfs";
+            reg = <0xb20000 0x1f4e0000>;
+        };
+    };
+
+};

@@ -11,7 +11,7 @@
 
 / {
 	model = "TI AM3517 EVM (AM3517/05 TMDSEVM3517)";
-	compatible = "ti,am3517-evm", "ti,am3517", "ti,omap3";
+	compatible = "asd,fs5-am3517", "ti,am3517", "ti,omap3";
 
     vmmc_fixed: vmmc {
         compatible = "regulator-fixed";
@@ -24,6 +24,29 @@
 		device_type = "memory";
 		reg = <0x80000000 0x10000000>; /* 256 MB */
 	};
+
+    fpga_spectro: fpga_spectro {
+        compatible = "asd,fs5";
+
+        pinctrl-names = "default";
+        pinctrl-0 = <&fpga_pins>;
+
+        bidi-gpios = <&gpio5 24 0
+                      &gpio5 25 0
+                      &gpio5 26 0
+                      &gpio5 27 0
+                      &gpio5 28 0
+                      &gpio5 29 0
+                      &gpio5 30 0
+                      &gpio5 31 0>;
+        ndata-gpios = <&gpio5 9 GPIO_ACTIVE_LOW>;
+        naddr-gpios = <&gpio5 10 GPIO_ACTIVE_LOW>;
+        nwrite-gpios = <&gpio5 0 GPIO_ACTIVE_LOW>;
+        nwait-gpios = <&gpio5 4 0>;
+        nreset-gpios = <&gpio5 22 GPIO_ACTIVE_LOW>;
+        nint3-gpios = <&gpio5 23 0>;
+        nint-gpios = <&gpio6 1 0>;
+    };
 };
 
 &omap3_pmx_core {
@@ -51,6 +74,48 @@
         pinctrl-single,pins = <
             0x192 (PIN_INPUT | MUX_MODE0)    /* i2c3_scl.i2c3_scl */
             0x194 (PIN_INPUT | MUX_MODE0)    /* i2c3_sda.i2c3_sda */
+        >;
+    };
+
+    /* This is the one on the analog board */
+    ana_mux_pins: pinmux_ana_mux_pins {
+        pinctrl-single,pins = <
+            0x112 (PIN_INPUT_PULLUP | MUX_MODE4)    /* mcbsp2_dx.gpio_119 - GPIO_INT3# */
+        >;
+    };
+
+    /* This is the one on the power board */
+    pwr_mux_pins: pinmux_pwr_mux_pins {
+        pinctrl-single,pins = <
+            0x10e (PIN_INPUT_PULLUP | MUX_MODE4)    /* mcbsp2_clkx.gpio_117 - GPIO_INT1# */
+        >;
+    };
+
+    fpga_pins: pinmux_fpga_pins {
+        pinctrl-single,pins = <
+            0x04e (PIN_INPUT | MUX_MODE4)           /* gpmc_a3.gpio_36 - BiDi[0] */
+            0x050 (PIN_INPUT | MUX_MODE4)           /* gpmc_a4.gpio_37 - BiDi[1] */
+            0x052 (PIN_INPUT | MUX_MODE4)           /* gpmc_a5.gpio_38 - BiDi[2] */
+            0x054 (PIN_INPUT | MUX_MODE4)           /* gpmc_a6.gpio_39 - BiDi[3] */
+            0x056 (PIN_INPUT | MUX_MODE4)           /* gpmc_a7.gpio_40 - BiDi[4] */
+            0x058 (PIN_INPUT | MUX_MODE4)           /* gpmc_a8.gpio_41 - BiDi[5] */
+            0x05a (PIN_INPUT | MUX_MODE4)           /* gpmc_a9.gpio_42 - BiDi[6] */
+            0x05c (PIN_INPUT | MUX_MODE4)           /* gpmc_a10.gpio_43 - BiDi[7] */
+
+            0x04c (PIN_OUTPUT_PULLUP | MUX_MODE4)   /* gpmc_a2.gpio_35 - nWRITE_STROBE */
+            0x04a (PIN_OUTPUT_PULLUP | MUX_MODE4)   /* gpmc_a1.gpio_34 - nADDR_STROBE */
+            0x084 (PIN_OUTPUT_PULLUP | MUX_MODE4)   /* gpmc_ncs3.gpio_54 - nDATA_STROBE */
+            0x09e (PIN_INPUT | MUX_MODE4)           /* gpmc_wait1.gpio_63 - nWAIT */
+            0x110 (PIN_OUTPUT_PULLUP | MUX_MODE4)   /* mcbsp2_dr.gpio_118 - nFGPA_RESET */
+            0x112 (PIN_INPUT_PULLUP | MUX_MODE4)    /* mcbsp2_dx.gpio_119 - nGPIO_INT3 */
+            0x098 (PIN_INPUT | MUX_MODE4)           /* gpmc_nbe1.gpio_61 - INTERRUPT */
+        >;
+    };
+
+    uart1_pins: pinmux_uart1_pins {
+        pinctrl-single,pins = <
+            0x14c (PIN_OUTPUT | MUX_MODE0)  /* uart1_tx.uart1_tx */
+            0x152 (PIN_INPUT | MUX_MODE0)  /* uart1_rx.uart1_rx */
         >;
     };
 };
@@ -118,6 +183,14 @@
     pinctrl-0 = <&i2c2_pins>;
 
     status = "okay";
+
+    battery: smart-battery@b {
+        compatible = "ti,bq20z65", "sbs,sbs-battery";
+        reg = <0xb>;
+        battery-name = "battery";
+        sbs,poll-retry-count = <2>;
+        sbs,i2c-retry-count = <100>;
+    };
 };
 
 &i2c3 {
@@ -127,6 +200,12 @@
     pinctrl-0 = <&i2c3_pins>;
 
     status = "okay";
+};
+
+&uart1 {
+    status = "okay";
+    pinctrl-names = "default";
+    pinctrl-0 = <&uart1_pins>;
 };
 
 &mmc1 {
