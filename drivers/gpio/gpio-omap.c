@@ -986,6 +986,14 @@ static int omap_gpio_get(struct gpio_chip *chip, unsigned offset)
 		return omap_get_gpio_dataout(bank, offset);
 }
 
+static unsigned int omap_gpio_get_bank_base(struct gpio_chip *chip)
+{
+	struct gpio_bank *bank;
+
+	bank = container_of(chip, struct gpio_bank, chip);
+	return (unsigned int) bank->base;
+}
+
 static int omap_gpio_output(struct gpio_chip *chip, unsigned offset, int value)
 {
 	struct gpio_bank *bank;
@@ -1084,6 +1092,7 @@ static int omap_gpio_chip_init(struct gpio_bank *bank, struct irq_chip *irqc)
 	bank->chip.get_direction = omap_gpio_get_direction;
 	bank->chip.direction_input = omap_gpio_input;
 	bank->chip.get = omap_gpio_get;
+	bank->chip.get_bank_base = omap_gpio_get_bank_base;
 	bank->chip.direction_output = omap_gpio_output;
 	bank->chip.set_debounce = omap_gpio_debounce;
 	bank->chip.set = omap_gpio_set;

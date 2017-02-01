@@ -22,30 +22,27 @@
         compatible = "asd,halo";
 
         pinctrl-names = "default";
-        pinctrl-0 = <&halo_fpga_pins>;
+        pinctrl-0 = <&fpga_pins>;
 
-        bidi-gpios = <&gpio2 4 0
-                      &gpio2 5 0
-                      &gpio2 6 0
-                      &gpio2 7 0
-                      &gpio2 8 0
-                      &gpio2 9 0
-                      &gpio2 10 0
-                      &gpio2 11 0>;
-        ndata-gpios = <&gpio2 22 GPIO_ACTIVE_LOW>;
-        naddr-gpios = <&gpio2 2 GPIO_ACTIVE_LOW>;
-        nwrite-gpios = <&gpio2 3 GPIO_ACTIVE_LOW>;
-        nwait-gpios = <&gpio2 31 0>;
+        bidi-gpios = <&gpio5 24 0
+                      &gpio5 25 0
+                      &gpio5 26 0
+                      &gpio5 27 0
+                      &gpio5 28 0
+                      &gpio5 29 0
+                      &gpio5 30 0
+                      &gpio5 31 0>;
+        ndata-gpios = <&gpio5 9 GPIO_ACTIVE_LOW>;
+        naddr-gpios = <&gpio5 10 GPIO_ACTIVE_LOW>;
+        nwrite-gpios = <&gpio5 0 GPIO_ACTIVE_LOW>;
+        nwait-gpios = <&gpio5 4 0>;
         nreset-gpios = <&gpio5 22 GPIO_ACTIVE_LOW>;
         nint3-gpios = <&gpio5 23 0>;
-        nint-gpios = <&gpio2 29 0>;
+        nint-gpios = <&gpio6 1 0>;
     };
 };
 
 &omap3_pmx_core {
-    pinctrl-names = "default";
-    pinctrl-0 = <&halo_fpga_pins>;
-
     otg_drv_vbus: pinmux_otg_drv_vbus {
         pinctrl-single,pins = <
             0x212 (PIN_OUTPUT | MUX_MODE0)  /* usb0_drvvbus.usb0_drvvbus */
@@ -87,7 +84,7 @@
         >;
     };
 
-    halo_fpga_pins: pinmux_halo_fpga_pins {
+    fpga_pins: pinmux_fpga_pins {
         pinctrl-single,pins = <
             0x114 (PIN_INPUT | MUX_MODE4)           /* mmc1_clk.gpio_120 - BiDi[0] */
             0x116 (PIN_INPUT | MUX_MODE4)           /* mmc1_cmd.gpio_121 - BiDi[1] */

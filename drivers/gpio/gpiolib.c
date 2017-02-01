@@ -1331,6 +1331,29 @@ int gpiod_get_value(const struct gpio_desc *desc)
 }
 EXPORT_SYMBOL_GPL(gpiod_get_value);
 
+/**
+ * gpiod_get_bank_base() - return a gpio's bank base address.
+ * @desc: gpio whose base register address will be returned
+ *
+ * Return the GPIO's bank base address. Since the MMIO address is remapped by the
+ * kernel, this returns the remapped address for direct register reads/writes.
+ *
+ * This function should be called from contexts where we cannot sleep, and will
+ * complain if the GPIO chip functions potentially sleep.
+ */
+unsigned int gpiod_get_bank_base(const struct gpio_desc *desc)
+{	
+	struct gpio_chip *chip;
+
+	if (!desc)
+		return 0;
+	WARN_ON(desc->chip->can_sleep);
+
+	chip = desc->chip;
+	return chip->get_bank_base(chip);
+}
+EXPORT_SYMBOL_GPL(gpiod_get_bank_base);
+
 /*
  *  _gpio_set_open_drain_value() - Set the open drain gpio's value.
  * @desc: gpio descriptor whose state need to be set.

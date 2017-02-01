@@ -31,21 +31,21 @@
         pinctrl-names = "default";
         pinctrl-0 = <&fpga_pins>;
 
-        bidi-gpios = <&gpio5 24 0
-                      &gpio5 25 0
-                      &gpio5 26 0
-                      &gpio5 27 0
-                      &gpio5 28 0
-                      &gpio5 29 0
-                      &gpio5 30 0
-                      &gpio5 31 0>;
-        ndata-gpios = <&gpio5 9 GPIO_ACTIVE_LOW>;
-        naddr-gpios = <&gpio5 10 GPIO_ACTIVE_LOW>;
-        nwrite-gpios = <&gpio5 0 GPIO_ACTIVE_LOW>;
-        nwait-gpios = <&gpio5 4 0>;
+        bidi-gpios = <&gpio2 4 0
+                      &gpio2 5 0
+                      &gpio2 6 0
+                      &gpio2 7 0
+                      &gpio2 8 0
+                      &gpio2 9 0
+                      &gpio2 10 0
+                      &gpio2 11 0>;
+        ndata-gpios = <&gpio2 22 GPIO_ACTIVE_LOW>;
+        naddr-gpios = <&gpio2 2 GPIO_ACTIVE_LOW>;
+        nwrite-gpios = <&gpio2 3 GPIO_ACTIVE_LOW>;
+        nwait-gpios = <&gpio2 31 0>;
         nreset-gpios = <&gpio5 22 GPIO_ACTIVE_LOW>;
         nint3-gpios = <&gpio5 23 0>;
-        nint-gpios = <&gpio6 1 0>;
+        nint-gpios = <&gpio2 29 0>;
     };
 };
 

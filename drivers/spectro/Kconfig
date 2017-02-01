@@ -1,0 +1,20 @@
+
+menuconfig SPECTRO
+	tristate "ASD Spectrometer Support"
+	help
+		Enables the use of ASD spectrometer devices.
+
+if SPECTRO
+
+config FPGA_CHAR
+	tristate "FPGA Spectrometer Character Device"
+	help
+		Enables the FPGA Spectrometer character device.
+
+config SPECTRO_DEBUG
+	bool "Spectrometer Debug"
+	help
+		Enables debug messages for spectrometer devices.
+
+endif
+

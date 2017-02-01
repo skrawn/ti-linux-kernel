@@ -15,14 +15,21 @@
 #include <linux/of_platform.h>
 #include <linux/ti_wilink_st.h>
 #include <linux/wl12xx.h>
+#include <linux/spectro.h>
 #include <linux/mmc/card.h>
 #include <linux/mmc/host.h>
 #include <linux/regulator/machine.h>
 #include <linux/regulator/fixed.h>
+#include <linux/usb/musb.h>
+#include <linux/usb/usb_phy_generic.h>
 
+#include <linux/platform_data/gpio-omap.h>
 #include <linux/platform_data/pinctrl-single.h>
 #include <linux/platform_data/iommu-omap.h>
 #include <linux/platform_data/wkup_m3.h>
+#include <linux/platform_data/pca953x.h>
+
+#include <mach/irqs.h>
 
 #include "common.h"
 #include "common-board-devices.h"
@@ -32,6 +39,9 @@
 #include "omap-secure.h"
 #include "soc.h"
 #include "hsmmc.h"
+#include "mux.h"
+
+#define AM35XX_IPSS_USBOTGSS_BASE      0x5C040000
 
 struct pdata_init {
 	const char *compatible;
@@ -238,9 +248,266 @@ static void __init omap3_sbc_t3517_legacy_init(void)
 	omap3_sbc_t3517_wifi_init();
 }
 
-static void __init am3517_evm_legacy_init(void)
+static struct omap_musb_board_data usb_otg_brd_data = {	
+	.interface_type = MUSB_INTERFACE_ULPI,
+	.mode = MUSB_OTG,
+	.power = 100,	
+	.set_phy_power = am35x_musb_phy_power,
+	.clear_irq = am35x_musb_clear_irq,
+	.set_mode = am35x_set_mode,
+	.reset = am35x_musb_reset,
+};
+
+static struct ehci_hcd_omap_platform_data ehci_data = {
+	.port_mode[0]			= OMAP_EHCI_PORT_MODE_PHY,
+	.port_mode[1]			= OMAP_USBHS_PORT_MODE_UNUSED,
+	.port_mode[2]			= OMAP_USBHS_PORT_MODE_UNUSED,
+
+	.reset_gpio_port[0] 	= 57,
+	.reset_gpio_port[1]		= -EINVAL,
+	.reset_gpio_port[2]		= -EINVAL,	
+
+	.phy_reset 				= 1,
+};
+
+static struct ohci_hcd_omap_platform_data ohci_data = {
+	.port_mode[0]			= OMAP_USBHS_PORT_MODE_UNUSED,
+	.port_mode[1]			= OMAP_USBHS_PORT_MODE_UNUSED,
+	.port_mode[2]			= OMAP_USBHS_PORT_MODE_UNUSED,
+};
+
+static struct usbhs_omap_platform_data usbhs_pdata = {
+	.nports 				= OMAP3_HS_USB_PORTS,
+
+	.port_mode[0] 			= OMAP_EHCI_PORT_MODE_PHY,
+	.port_mode[1] 			= OMAP_USBHS_PORT_MODE_UNUSED,
+	.port_mode[2]			= OMAP_USBHS_PORT_MODE_UNUSED,
+
+	.reset_gpio_port[0] 	= 57,
+	.reset_gpio_port[1]		= -EINVAL,
+	.reset_gpio_port[2]		= -EINVAL,
+
+	.ehci_data				= &ehci_data,
+	.ohci_data				= &ohci_data,
+
+	.phy_reset 				= 1,
+
+};
+
+#define HALO_ANALOG_BOARD_EXP_BASE	OMAP_MAX_GPIO_LINES
+#define HALO_ANALOG_PWR_EN			HALO_ANALOG_BOARD_EXP_BASE
+#define HALO_LED_EN					HALO_ANALOG_BOARD_EXP_BASE + 1
+#define HALO_TEC1_EN				HALO_ANALOG_BOARD_EXP_BASE + 2
+#define HALO_TEC2_EN				HALO_ANALOG_BOARD_EXP_BASE + 3
+
+static int halo_analog_board_io_expander_setup(struct i2c_client *client, unsigned gpio, 
+							unsigned ngpio, void *context)
 {
+	int ret;
+
+	ret = gpio_request(HALO_ANALOG_PWR_EN, "analog_pwr_en");
+	if (ret) {
+		printk(KERN_ERR "Failed to request analog_pwr_en\n");		
+	}
+
+	ret = gpio_request(HALO_LED_EN, "led_en");
+	if (ret) {
+		printk(KERN_ERR "Failed to request led_en\n");		
+	}
+
+	ret = gpio_request(HALO_TEC1_EN, "tec1_en");
+	if (ret) {
+		printk(KERN_ERR "Failed to request tec1_en\n");		
+	}
+
+	ret = gpio_request(HALO_TEC2_EN, "tec2_en");
+	if (ret) {
+		printk(KERN_ERR "Failed to request tec2_en\n");		
+	}
+	
+	gpio_direction_output(HALO_ANALOG_PWR_EN, 1);
+	gpio_direction_output(HALO_LED_EN, 1);
+	gpio_direction_output(HALO_TEC1_EN, 1);
+	gpio_direction_output(HALO_TEC2_EN, 1);
+
+	return 0;
+}
+
+static int halo_analog_board_io_expander_teardown(struct i2c_client *client, unsigned gpio, 
+							unsigned ngpio, void *context)
+{
+	gpio_set_value(HALO_ANALOG_PWR_EN, 0);
+	gpio_set_value(HALO_LED_EN, 0);
+	gpio_set_value(HALO_TEC1_EN, 0);
+	gpio_set_value(HALO_TEC2_EN, 0);
+
+	gpio_free(HALO_ANALOG_PWR_EN);
+	gpio_free(HALO_LED_EN);
+	gpio_free(HALO_TEC1_EN);
+	gpio_free(HALO_TEC2_EN);
+
+	return 0;
+}
+
+static struct pca953x_platform_data halo_analog_board_expander_info = {
+	.gpio_base	= OMAP_MAX_GPIO_LINES,
+	.invert = 0,
+	.setup = halo_analog_board_io_expander_setup,
+	.teardown = halo_analog_board_io_expander_teardown,
+};
+
+#define HALO_POWER_BOARD_EXP_BASE 	OMAP_MAX_GPIO_LINES + 16
+#define HALO_LOW_POWERn				HALO_POWER_BOARD_EXP_BASE
+#define HALO_LOW_BATn				HALO_POWER_BOARD_EXP_BASE + 1
+#define HALO_LAMP_FAULTn		 	HALO_POWER_BOARD_EXP_BASE + 2
+#define HALO_REF_COLLECTOR			HALO_POWER_BOARD_EXP_BASE + 3
+#define HALO_STEPPER_ENABLEn		HALO_POWER_BOARD_EXP_BASE + 4
+#define HALO_STEPPER_DIR			HALO_POWER_BOARD_EXP_BASE + 5
+#define HALO_SWIR_LED_CATH			HALO_POWER_BOARD_EXP_BASE + 6
+#define HALO_STEPS_MOTOR			HALO_POWER_BOARD_EXP_BASE + 7
+#define HALO_STEPPER_SWITCH			HALO_POWER_BOARD_EXP_BASE + 8
+#define HALO_BLDC_SWITCH 			HALO_POWER_BOARD_EXP_BASE + 9
+#define HALO_LAMP_SWITCH			HALO_POWER_BOARD_EXP_BASE + 10
+#define HALO_FAN_SWITCH				HALO_POWER_BOARD_EXP_BASE + 11
+#define HALO_EXP_NC_0				HALO_POWER_BOARD_EXP_BASE + 12
+#define HALO_STEPPER_SLEEPn			HALO_POWER_BOARD_EXP_BASE + 13
+#define HALO_STEPPER_FAULTn			HALO_POWER_BOARD_EXP_BASE + 14
+#define HALO_EXP_NC_1				HALO_POWER_BOARD_EXP_BASE + 15
+
+
+int halo_power_board_io_expander_setup(struct i2c_client *client, unsigned gpio, 
+							unsigned ngpio, void *context)
+{
+	int ret;
+
+	ret = gpio_request(HALO_LOW_POWERn, "low_powern");
+	if (ret) {
+		printk(KERN_ERR "Failed to request low_powern\n");		
+	}
+
+	ret = gpio_request(HALO_LOW_BATn, "low_batn");
+	if (ret) {
+		printk(KERN_ERR "Failed to request low_batn\n");		
+	}
+
+	ret = gpio_request(HALO_LAMP_FAULTn, "lamp_faultn");
+	if (ret) {
+		printk(KERN_ERR "Failed to request lamp_faultn\n");		
+	}
+
+	ret = gpio_request(HALO_REF_COLLECTOR, "ref_collect");
+	if (ret) {
+		printk(KERN_ERR "Failed to request ref_collect\n");		
+	}
+
+	/* Stepper related GPIOs are not used */
+
+	ret = gpio_request(HALO_SWIR_LED_CATH, "swir_led_cath");	
+	if (ret) {
+		printk(KERN_ERR "Failed to request swir_led_cath\n");		
+	}
+
+	ret = gpio_request(HALO_BLDC_SWITCH, "bldc_switch");	
+	if (ret) {
+		printk(KERN_ERR "Failed to request bldc_switch\n");		
+	}
+
+	ret = gpio_request(HALO_LAMP_SWITCH, "lamp_switch");	
+	if (ret) {
+		printk(KERN_ERR "Failed to request lamp_switch\n");		
+	}
+
+	ret = gpio_request(HALO_FAN_SWITCH, "fan_switch");	
+	if (ret) {
+		printk(KERN_ERR "Failed to request fan_switch\n");		
+	}
+
+	gpio_direction_input(HALO_LOW_POWERn);
+	gpio_direction_input(HALO_LOW_BATn);
+	gpio_direction_input(HALO_LAMP_FAULTn);
+	gpio_direction_input(HALO_REF_COLLECTOR);
+
+	gpio_direction_output(HALO_SWIR_LED_CATH, 0);	
+	gpio_direction_output(HALO_BLDC_SWITCH, 1);	
+	gpio_direction_output(HALO_LAMP_SWITCH, 1);	
+	gpio_direction_output(HALO_FAN_SWITCH, 1);	
+
+	return 0;
+}
+
+int halo_power_board_io_expander_teardown(struct i2c_client *client, unsigned gpio, 
+							unsigned ngpio, void *context)
+{
+	gpio_set_value(HALO_SWIR_LED_CATH, 0);
+	gpio_set_value(HALO_BLDC_SWITCH, 0);
+	gpio_set_value(HALO_LAMP_SWITCH, 0);
+	gpio_set_value(HALO_FAN_SWITCH, 0);
+
+	gpio_free(HALO_LOW_POWERn);
+	gpio_free(HALO_LOW_BATn);
+	gpio_free(HALO_LAMP_FAULTn);
+	gpio_free(HALO_REF_COLLECTOR);
+	gpio_free(HALO_SWIR_LED_CATH);
+	gpio_free(HALO_BLDC_SWITCH);
+	gpio_free(HALO_LAMP_SWITCH);
+	gpio_free(HALO_FAN_SWITCH);	
+
+	return 0;
+}
+
+static struct pca953x_platform_data halo_power_board_expander_info = {
+	.gpio_base	= OMAP_MAX_GPIO_LINES + 16,
+	.invert = 0,
+	.setup = halo_power_board_io_expander_setup,
+	.teardown = halo_power_board_io_expander_teardown,
+};
+
+static struct i2c_board_info __initdata halo_am3517_i2c3_boardinfo[] = {
+	{
+		I2C_BOARD_INFO("tca6416", 0x20),
+		.platform_data = &halo_analog_board_expander_info,
+	},
+	{
+		I2C_BOARD_INFO("tca6416", 0x21),
+		.platform_data = &halo_power_board_expander_info,		
+	},
+};
+
+static struct omap_board_mux board_mux[] __initdata = {
+	{ .reg_offset = OMAP_MUX_TERMINATOR },
+};
+
+struct usbhs_phy_data usbhs_phy = {
+	.port = 1,
+	.reset_gpio = 57,
+};
+
+static void __init am3517_evm_legacy_init(void)
+{	
+	omap3_mux_init(board_mux, OMAP_PACKAGE_CBB);
+
 	am35xx_emac_reset();
+	hsmmc2_internal_input_clk();	
+
+	usb_musb_init(&usb_otg_brd_data);	
+
+	usbhs_init_phys(&usbhs_phy, 1);
+	usbhs_init(&usbhs_pdata);
+}
+
+static void __init halo_am3517_legacy_init(void)
+{
+	omap3_mux_init(board_mux, OMAP_PACKAGE_CBB);
+
+	hsmmc2_internal_input_clk();	
+
+	usb_musb_init(&usb_otg_brd_data);
+
+	usbhs_init_phys(&usbhs_phy, 1);
+	usbhs_init(&usbhs_pdata);
+
+	omap_register_i2c_bus(3, 400, halo_am3517_i2c3_boardinfo,
+		ARRAY_SIZE(halo_am3517_i2c3_boardinfo));
 }
 
 static struct platform_device omap3_rom_rng_device = {
@@ -506,6 +773,7 @@ static struct pdata_init pdata_quirks[] __initdata = {
 	{ "logicpd,dm3730-torpedo-devkit", omap3_gpio126_127_129, },
 	{ "ti,omap3-evm-37xx", omap3_evm_legacy_init, },
 	{ "ti,am3517-evm", am3517_evm_legacy_init, },
+	{ "asd,halo-am3517", halo_am3517_legacy_init, },
 	{ "technexion,omap3-tao3530", omap3_tao3530_legacy_init, },
 	{ "openpandora,omap3-pandora-600mhz", omap3_pandora_legacy_init, },
 	{ "openpandora,omap3-pandora-1ghz", omap3_pandora_legacy_init, },
