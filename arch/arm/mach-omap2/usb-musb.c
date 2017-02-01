@@ -64,6 +64,7 @@ void __init usb_musb_init(struct omap_musb_board_data *musb_board_data)
 	struct platform_device		*pdev;
 	struct device			*dev;
 	int				bus_id = -1;
+	unsigned int rev;
 	const char			*oh_name, *name;
 	struct omap_musb_board_data	*board_data;
 
@@ -82,13 +83,22 @@ void __init usb_musb_init(struct omap_musb_board_data *musb_board_data)
 	musb_plat.mode = board_data->mode;
 	musb_plat.extvbus = board_data->extvbus;
 
-	oh_name = "usb_otg_hs";
-	name = "musb-omap2430";
+	rev = omap_rev();
 
-        oh = omap_hwmod_lookup(oh_name);
-        if (WARN(!oh, "%s: could not find omap_hwmod for %s\n",
-                 __func__, oh_name))
-                return;
+	if (rev == AM35XX_REV_ES1_0 || rev == AM35XX_REV_ES1_1) {
+		oh_name = "am35x_otg_hs";
+		name = "musb-am35x";
+		musb_plat.clock = "hsotgusb_ick";		
+	}
+	else {
+		oh_name = "usb_otg_hs";
+		name = "musb-omap2430";		
+	}
+
+    oh = omap_hwmod_lookup(oh_name);
+    if (WARN(!oh, "%s: could not find omap_hwmod for %s\n",
+             __func__, oh_name))
+            return;
 
 	pdev = omap_device_build(name, bus_id, oh, &musb_plat,
 				 sizeof(musb_plat));

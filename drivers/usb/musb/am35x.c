@@ -479,14 +479,14 @@ static int am35x_probe(struct platform_device *pdev)
 		goto err0;
 	}
 
-	phy_clk = clk_get(&pdev->dev, "fck");
+	phy_clk = clk_get(&pdev->dev, "hsotgusb_fck");
 	if (IS_ERR(phy_clk)) {
 		dev_err(&pdev->dev, "failed to get PHY clock\n");
 		ret = PTR_ERR(phy_clk);
 		goto err3;
-	}
-
-	clk = clk_get(&pdev->dev, "ick");
+	}	
+	
+	clk = clk_get(&pdev->dev, "hsotgusb_ick");
 	if (IS_ERR(clk)) {
 		dev_err(&pdev->dev, "failed to get clock\n");
 		ret = PTR_ERR(clk);
@@ -615,6 +615,16 @@ static int am35x_resume(struct device *dev)
 
 static SIMPLE_DEV_PM_OPS(am35x_pm_ops, am35x_suspend, am35x_resume);
 
+#ifdef CONFIG_OF
+static const struct of_device_id am35x_id_table[] = {
+	{
+		.compatible = "ti,am35x-musb"
+	},
+	{},
+};
+MODULE_DEVICE_TABLE(of, am35x_id_table);
+#endif
+
 static struct platform_driver am35x_driver = {
 	.probe		= am35x_probe,
 	.remove		= am35x_remove,
@@ -627,4 +637,14 @@ static struct platform_driver am35x_driver = {
 MODULE_DESCRIPTION("AM35x MUSB Glue Layer");
 MODULE_AUTHOR("Ajay Kumar Gupta <ajay.gupta@ti.com>");
 MODULE_LICENSE("GPL v2");
-module_platform_driver(am35x_driver);
+static int __init am35x_musb_mod_init(void)
+{
+	return platform_driver_register(&am35x_driver);
+}
+subsys_initcall(am35x_musb_mod_init);
+
+static void __exit am35x_musb_mod_exit(void)
+{
+	platform_driver_unregister(&am35x_driver);
+}
+module_exit(am35x_musb_mod_exit);
