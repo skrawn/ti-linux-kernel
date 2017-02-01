@@ -510,6 +510,22 @@ static void __init halo_am3517_legacy_init(void)
 		ARRAY_SIZE(halo_am3517_i2c3_boardinfo));
 }
 
+static void __init fs5_am3517_legacy_init(void)
+{
+	omap3_mux_init(board_mux, OMAP_PACKAGE_CBB);
+
+	am35xx_emac_reset();
+	hsmmc2_internal_input_clk();
+
+	usb_musb_init(&usb_otg_brd_data);
+
+	usbhs_init_phys(&usbhs_phy, 1);
+	usbhs_init(&usbhs_pdata);
+
+	omap_register_i2c_bus(3, 400, halo_am3517_i2c3_boardinfo,
+		ARRAY_SIZE(halo_am3517_i2c3_boardinfo));
+}
+
 static struct platform_device omap3_rom_rng_device = {
 	.name		= "omap3-rom-rng",
 	.id		= -1,
@@ -774,6 +790,7 @@ static struct pdata_init pdata_quirks[] __initdata = {
 	{ "ti,omap3-evm-37xx", omap3_evm_legacy_init, },
 	{ "ti,am3517-evm", am3517_evm_legacy_init, },
 	{ "asd,halo-am3517", halo_am3517_legacy_init, },
+	{ "asd,fs5-am3517", fs5_am3517_legacy_init, },
 	{ "technexion,omap3-tao3530", omap3_tao3530_legacy_init, },
 	{ "openpandora,omap3-pandora-600mhz", omap3_pandora_legacy_init, },
 	{ "openpandora,omap3-pandora-1ghz", omap3_pandora_legacy_init, },
