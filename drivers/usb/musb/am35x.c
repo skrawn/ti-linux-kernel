@@ -446,6 +446,9 @@ static const struct musb_platform_ops am35x_ops = {
 #ifdef CONFIG_USB_INVENTRA_DMA
 	.dma_init	= musbhs_dma_controller_create,
 	.dma_exit	= musbhs_dma_controller_destroy,
+#elif defined(CONFIG_USB_MUSB_TUSB6010)
+	.dma_init 	= tusb_dma_controller_create,
+	.dma_exit 	= tusb_dma_controller_destroy,
 #endif
 	.enable		= am35x_musb_enable,
 	.disable	= am35x_musb_disable,
