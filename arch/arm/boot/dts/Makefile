@@ -399,7 +399,7 @@ dtb-$(CONFIG_ARCH_OMAP3) += \
 	am3517-craneboard.dtb \
 	am3517-evm.dtb \
 	am3517_mt_ventoux.dtb \
-	halo-fs5-am3517.dtb \
+	fs5-am3517.dtb \
 	halo-am3517.dtb \
 	logicpd-torpedo-37xx-devkit.dtb \
 	omap3430-sdp.dtb \
