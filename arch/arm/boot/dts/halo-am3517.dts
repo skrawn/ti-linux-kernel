@@ -104,6 +104,13 @@
             0x126 (PIN_INPUT | MUX_MODE4)           /* mmc1_dat7.gpio_129 - INTERRUPT */
         >;
     };
+
+    uart1_pins: pinmux_uart1_pins {
+        pinctrl-single,pins = <
+            0x14c (PIN_OUTPUT | MUX_MODE0)  /* uart1_tx.uart1_tx */
+            0x152 (PIN_INPUT | MUX_MODE0)  /* uart1_rx.uart1_rx */
+        >;
+    };
 };
 
 &am35x_otg_hs {
@@ -183,6 +190,12 @@
     /* Will be initialized in pdata-quirks */
     status = "disabled";
 };
+
+&uart1 {
+    status = "okay";
+    pinctrl-names = "default";
+    pinctrl-0 = <&uart1_pins>;
+}
 
 &mmc1 {
 	status = "disabled";
