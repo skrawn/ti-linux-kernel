@@ -48,6 +48,17 @@ static struct file_operations fops =
    .release = dev_release,
 };
 
+typedef struct {
+    u32 port_data_mask;
+    u32 port_data_shift;
+
+    void __iomem *port_data_set;
+    void __iomem *port_data_clr;
+    void __iomem *port_data_oe;
+    void __iomem *port_data_in;
+    void __iomem *port_data_out;
+} pin_registers;
+
 struct halo_fpga_platform_data {
 	struct gpio_descs *bidi_descs;
 	struct gpio_desc *nData_desc;
@@ -61,14 +72,11 @@ struct halo_fpga_platform_data {
 	struct class *char_class;
 	int majorNumber;
 
-	u32 port_data_mask;
-	u32 port_data_shift;
-
-	void __iomem *port_data_set;
-	void __iomem *port_data_clr;
-	void __iomem *port_data_oe;
-	void __iomem *port_data_in;
-	void __iomem *port_data_out;
+    pin_registers bidi_port;
+    pin_registers nWait_port;
+    pin_registers nAddr_port;
+    pin_registers nData_port;
+    pin_registers nWrite_port;
 
 	u8 port_dir;
 };
@@ -87,18 +95,20 @@ static const struct of_device_id halo_fpga_id_table[] = {
 #define OMAP24XX_GPIO_CLEARDATAOUT	0x0090
 #define OMAP24XX_GPIO_SETDATAOUT	0x0094
 
-#define FPGA_PORT_WIDTH      8 //bits
+#define FPGA_PORT_WIDTH             8 //bits
 
-#define FPGA_OK                   0
-#define FPGA_WAIT_TIMEOUT         -3
+#define FPGA_OK                     0
+#define FPGA_WAIT_TIMEOUT           -3
 
-#define PORT_DIR_OUT              0
-#define PORT_DIR_IN               1
+#define PORT_DIR_OUT                0
+#define PORT_DIR_IN                 1
 
-#define CMD_WRITE_ADDR            0x01
-#define CMD_READ_ADDR             0x02
-#define CMD_WRITE_DATA            0x03
-#define CMD_READ_DATA             0x04
+#define CMD_WRITE_ADDR              0x01
+#define CMD_READ_ADDR               0x02
+#define CMD_WRITE_DATA              0x03
+#define CMD_READ_DATA               0x04
+
+#define STATUS_REG_ADDR             0x0E
 
 #if !DISABLE_SPIN_LOCKS
 static DEFINE_SPINLOCK(fpga_lock);
@@ -111,22 +121,23 @@ static inline void set_bidi_pins(u8 port_val)
     u32 val_set;
     u32 val_clr;
 
-    val_set = (((u32) (port_val)) << fpga_pdata.port_data_shift) & fpga_pdata.port_data_mask;
-    val_clr = (((u32) (~port_val)) << fpga_pdata.port_data_shift) & fpga_pdata.port_data_mask;
-  	writel(val_set, fpga_pdata.port_data_set);
-  	writel(val_clr, fpga_pdata.port_data_clr);
+    val_set = (((u32) (port_val)) << fpga_pdata.bidi_port.port_data_shift) & fpga_pdata.bidi_port.port_data_mask;
+    val_clr = (((u32) (~port_val)) << fpga_pdata.bidi_port.port_data_shift) & fpga_pdata.bidi_port.port_data_mask;
+  	writel(val_set, fpga_pdata.bidi_port.port_data_set);
+  	writel(val_clr, fpga_pdata.bidi_port.port_data_clr);
 }
 
 static inline u8 get_bidi_pins(void)
 {
-    return (u8) ((readl(fpga_pdata.port_data_in) & fpga_pdata.port_data_mask) >> fpga_pdata.port_data_shift);
+    return (u8) ((readl(fpga_pdata.bidi_port.port_data_in) & fpga_pdata.bidi_port.port_data_mask) >> fpga_pdata.bidi_port.port_data_shift);
 }
 
 static inline int halo_fpga_wait_busy(void)
 {
     unsigned long timeout = jiffies + usecs_to_jiffies(1);
 
-    while (!gpiod_get_value(fpga_pdata.nWait_desc)) {
+    //while (!gpiod_get_value(fpga_pdata.nWait_desc)) {
+    while(!(readl(fpga_pdata.nWait_port.port_data_in) & fpga_pdata.nWait_port.port_data_mask)) {
 		if (time_after(jiffies, timeout)) {
 			return FPGA_WAIT_TIMEOUT;
 		}
@@ -138,7 +149,8 @@ static inline int halo_fpga_wait_done(void)
 {
     unsigned long timeout = jiffies + usecs_to_jiffies(1);
 
-    while (gpiod_get_value(fpga_pdata.nWait_desc)) {
+    //while (gpiod_get_value(fpga_pdata.nWait_desc)) {
+    while (readl(fpga_pdata.nWait_port.port_data_in) & fpga_pdata.nWait_port.port_data_mask) {
 		if (time_after(jiffies, timeout)) {
 			return FPGA_WAIT_TIMEOUT;
 		}
@@ -151,9 +163,9 @@ static inline void halo_fpga_set_port_out(void)
     // Set the data pins as outputs
     u32 val;
 
-    val = readl(fpga_pdata.port_data_oe);
-    val &= ~(fpga_pdata.port_data_mask);
-    writel(val, fpga_pdata.port_data_oe);
+    val = readl(fpga_pdata.bidi_port.port_data_oe);
+    val &= ~(fpga_pdata.bidi_port.port_data_mask);
+    writel(val, fpga_pdata.bidi_port.port_data_oe);
 
     fpga_pdata.port_dir = PORT_DIR_OUT;
 }
@@ -163,27 +175,27 @@ static inline void halo_fpga_set_port_in(void)
     // Set the data pins as inputs
     u32 val;
 
-    val = readl(fpga_pdata.port_data_oe);
-    val |= fpga_pdata.port_data_mask;
-    writel(val, fpga_pdata.port_data_oe);
+    val = readl(fpga_pdata.bidi_port.port_data_oe);
+    val |= fpga_pdata.bidi_port.port_data_mask;
+    writel(val, fpga_pdata.bidi_port.port_data_oe);
 
     fpga_pdata.port_dir = PORT_DIR_IN;
 }
 
-static inline size_t halo_fpga_write_data(const void *buf, size_t len)
+static inline ssize_t halo_fpga_write_data(const void *buf, size_t len)
 {
-    size_t retval;
+    ssize_t retval;
 
     // Check that our port direction is out
     if (fpga_pdata.port_dir != PORT_DIR_OUT)
         halo_fpga_set_port_out();
 
-    // Bring Write Strobe Low, wait 1 us
-    gpiod_set_value(fpga_pdata.nWrite_desc, 1);
+    // Bring Write Strobe Low, wait 1 usl
+    writel((1 << fpga_pdata.nWrite_port.port_data_shift), fpga_pdata.nWrite_port.port_data_clr);
 
     // Put the data on the port and bring the data strobe low
     set_bidi_pins(*((u8 *) buf));
-    gpiod_set_value(fpga_pdata.nData_desc, 1);
+    writel((1 << fpga_pdata.nData_port.port_data_shift), fpga_pdata.nData_port.port_data_clr);
 
     // Wait for WAIT to go high
     if (halo_fpga_wait_busy() != FPGA_OK) {
@@ -194,10 +206,10 @@ static inline size_t halo_fpga_write_data(const void *buf, size_t len)
         retval = len;
 
     // Bring data strobe high
-    gpiod_set_value(fpga_pdata.nData_desc, 0);
+    writel((1 << fpga_pdata.nData_port.port_data_shift), fpga_pdata.nData_port.port_data_set);
 
     // Bring write strobe high and set the data back to 0
-    gpiod_set_value(fpga_pdata.nWrite_desc, 0);
+    writel((1 << fpga_pdata.nWrite_port.port_data_shift), fpga_pdata.nWrite_port.port_data_set);
     set_bidi_pins(0);
 
     // Wait for bus to clear
@@ -209,10 +221,10 @@ static inline size_t halo_fpga_write_data(const void *buf, size_t len)
     return retval;
 }
 
-static inline size_t halo_fpga_read_data(void *buf, size_t len)
+static inline ssize_t halo_fpga_read_data(void *buf, size_t len)
 {
     u8 *data_ptr = (u8 *) buf;
-    size_t retval = len;
+    ssize_t retval = len;
     u8 data;
 
     // Check that our port direction is in
@@ -220,15 +232,15 @@ static inline size_t halo_fpga_read_data(void *buf, size_t len)
         halo_fpga_set_port_in();
 
     while (len-- > 0) {
-	   // Bring Data Strobe Low
-    	gpiod_set_value(fpga_pdata.nData_desc, 1);
+	    // Bring Data Strobe Low
+        writel((1 << fpga_pdata.nData_port.port_data_shift), fpga_pdata.nData_port.port_data_clr);
 
 	    // Wait for WAIT to go high
 	    if (halo_fpga_wait_busy() != FPGA_OK) {
     		dev_err(&fpga_pdata.pdev->dev, "Data read bus wait timeout\n");
     		retval = FPGA_WAIT_TIMEOUT;
 
-    		gpiod_set_value(fpga_pdata.nData_desc, 0);
+            writel((1 << fpga_pdata.nData_port.port_data_shift), fpga_pdata.nData_port.port_data_set);
     		goto out;
         }
 
@@ -236,7 +248,7 @@ static inline size_t halo_fpga_read_data(void *buf, size_t len)
         data = get_bidi_pins();
 
         // Bring data strobe high
-        gpiod_set_value(fpga_pdata.nData_desc, 0);
+        writel((1 << fpga_pdata.nData_port.port_data_shift), fpga_pdata.nData_port.port_data_set);
 
         // Wait for bus to clear
         if (halo_fpga_wait_done() != FPGA_OK) {
@@ -252,20 +264,20 @@ out:
     return retval;
 }
 
-static inline size_t halo_fpga_write_addr(const void *buf, size_t len)
+static inline ssize_t halo_fpga_write_addr(const void *buf, size_t len)
 {
-    size_t retval;
+    ssize_t retval;
 
     // Check that our port direction is out
     if (fpga_pdata.port_dir != PORT_DIR_OUT)
         halo_fpga_set_port_out();
 
     // Bring Write Strobe Low
-    gpiod_set_value(fpga_pdata.nWrite_desc, 1);
+    writel((1 << fpga_pdata.nWrite_port.port_data_shift), fpga_pdata.nWrite_port.port_data_clr);
 
     // Put the address on the port and bring the address strobe low
     set_bidi_pins(*((u8 *) buf));
-    gpiod_set_value(fpga_pdata.nAddr_desc, 1);
+    writel((1 << fpga_pdata.nAddr_port.port_data_shift), fpga_pdata.nAddr_port.port_data_clr);
 
     // Wait for WAIT to go high
     if (halo_fpga_wait_busy() != FPGA_OK) {
@@ -276,10 +288,10 @@ static inline size_t halo_fpga_write_addr(const void *buf, size_t len)
         retval = len;
 
     // Bring address strobe high
-    gpiod_set_value(fpga_pdata.nAddr_desc, 0);
+    writel((1 << fpga_pdata.nAddr_port.port_data_shift), fpga_pdata.nAddr_port.port_data_set);
 
     // Bring write strobe high and set the data back to 0
-    gpiod_set_value(fpga_pdata.nWrite_desc, 0);
+    writel((1 << fpga_pdata.nWrite_port.port_data_shift), fpga_pdata.nWrite_port.port_data_set);
     set_bidi_pins(0);
 
     // Wait for bus to clear
@@ -291,10 +303,10 @@ static inline size_t halo_fpga_write_addr(const void *buf, size_t len)
     return retval;
 }
 
-static inline size_t halo_fpga_read_addr(void *buf, size_t len)
+static inline ssize_t halo_fpga_read_addr(void *buf, size_t len)
 {
     u8 *addr_ptr = (u8 *) buf;
-    size_t retval;
+    ssize_t retval;
     u8 data;
 
     // Check that our port direction is in
@@ -302,7 +314,7 @@ static inline size_t halo_fpga_read_addr(void *buf, size_t len)
         halo_fpga_set_port_in();
 
     // Bring Address Strobe Low
-    gpiod_set_value(fpga_pdata.nAddr_desc, 1);
+    writel((1 << fpga_pdata.nAddr_port.port_data_shift), fpga_pdata.nAddr_port.port_data_clr);
 
     // Wait for WAIT to go high
     if (halo_fpga_wait_busy() != FPGA_OK) {
@@ -316,7 +328,7 @@ static inline size_t halo_fpga_read_addr(void *buf, size_t len)
     data = get_bidi_pins();
 
     // Bring address strobe high
-    gpiod_set_value(fpga_pdata.nAddr_desc, 0);
+    writel((1 << fpga_pdata.nAddr_port.port_data_shift), fpga_pdata.nAddr_port.port_data_set);
 
     // Wait for bus to clear
     if (halo_fpga_wait_done() != FPGA_OK) {
@@ -381,7 +393,7 @@ int __init halo_fpga_init(void)
     }
 
     // Perform a status register read to verify functionality
-    status = 0xE;
+    status = STATUS_REG_ADDR;
     if (halo_fpga_write_addr(&status, 1) <= 0) {
         dev_err(&fpga_pdata.pdev->dev, "could not write status register address\n");
         goto err3;
@@ -501,7 +513,7 @@ out:
  */
 static ssize_t dev_write(struct file *filep, const char *buffer, size_t len, loff_t *offset)
 {
-    size_t retval = len;
+    ssize_t retval = len;
     uint8_t *cmd_buf;
     unsigned long flags;
 
@@ -586,17 +598,6 @@ static int halo_fpga_probe(struct platform_device *pdev)
 
 	fpga_pdata.bidi_descs = descs;
 
-    // Set up the port base addresses
-    port_base_address = (void __iomem *) gpiod_get_bank_base(fpga_pdata.bidi_descs->desc[0]);
-    fpga_pdata.port_data_set = port_base_address + OMAP24XX_GPIO_SETDATAOUT;
-    fpga_pdata.port_data_clr = port_base_address + OMAP24XX_GPIO_CLEARDATAOUT;
-    fpga_pdata.port_data_oe = port_base_address + OMAP24XX_GPIO_OE;
-    fpga_pdata.port_data_in = port_base_address + OMAP24XX_GPIO_DATAIN;
-    fpga_pdata.port_data_out = port_base_address + OMAP24XX_GPIO_DATAOUT;
-
-    fpga_pdata.port_data_shift = (desc_to_gpio(fpga_pdata.bidi_descs->desc[0]) - 32);
-    fpga_pdata.port_data_mask = (0xFFul) << fpga_pdata.port_data_shift;
-
     // Note that the strobes are marked active low in the device tree, so when setting
     // them to their default state, they need to be set to low so the value on the pin
     // is actually high.
@@ -645,6 +646,40 @@ static int halo_fpga_probe(struct platform_device *pdev)
 		goto err5;
     }
 
+    // Set up the port base addresses
+    port_base_address = (void __iomem *) gpiod_get_bank_base(fpga_pdata.bidi_descs->desc[0]);
+    fpga_pdata.bidi_port.port_data_set = port_base_address + OMAP24XX_GPIO_SETDATAOUT;
+    fpga_pdata.bidi_port.port_data_clr = port_base_address + OMAP24XX_GPIO_CLEARDATAOUT;
+    fpga_pdata.bidi_port.port_data_oe = port_base_address + OMAP24XX_GPIO_OE;
+    fpga_pdata.bidi_port.port_data_in = port_base_address + OMAP24XX_GPIO_DATAIN;
+    fpga_pdata.bidi_port.port_data_out = port_base_address + OMAP24XX_GPIO_DATAOUT;
+
+    fpga_pdata.bidi_port.port_data_shift = (desc_to_gpio(fpga_pdata.bidi_descs->desc[0]) - 32);
+    fpga_pdata.bidi_port.port_data_mask = (0xFFul) << fpga_pdata.bidi_port.port_data_shift;
+
+    port_base_address = (void __iomem *) gpiod_get_bank_base(fpga_pdata.nAddr_desc);
+    fpga_pdata.nAddr_port.port_data_set = port_base_address + OMAP24XX_GPIO_SETDATAOUT;
+    fpga_pdata.nAddr_port.port_data_clr = port_base_address + OMAP24XX_GPIO_CLEARDATAOUT;
+    fpga_pdata.nAddr_port.port_data_shift = desc_to_gpio(fpga_pdata.nAddr_desc) - 32;
+    fpga_pdata.nAddr_port.port_data_mask = (1) << fpga_pdata.nAddr_port.port_data_shift;
+
+    port_base_address = (void __iomem *) gpiod_get_bank_base(fpga_pdata.nWrite_desc);
+    fpga_pdata.nWrite_port.port_data_set = port_base_address + OMAP24XX_GPIO_SETDATAOUT;
+    fpga_pdata.nWrite_port.port_data_clr = port_base_address + OMAP24XX_GPIO_CLEARDATAOUT;
+    fpga_pdata.nWrite_port.port_data_shift = desc_to_gpio(fpga_pdata.nWrite_desc) - 32;
+    fpga_pdata.nWrite_port.port_data_mask = (1) << fpga_pdata.nWrite_port.port_data_shift;
+
+    port_base_address = (void __iomem *) gpiod_get_bank_base(fpga_pdata.nData_desc);
+    fpga_pdata.nData_port.port_data_set = port_base_address + OMAP24XX_GPIO_SETDATAOUT;
+    fpga_pdata.nData_port.port_data_clr = port_base_address + OMAP24XX_GPIO_CLEARDATAOUT;
+    fpga_pdata.nData_port.port_data_shift = desc_to_gpio(fpga_pdata.nData_desc) - 32;
+    fpga_pdata.nData_port.port_data_mask = (1) << fpga_pdata.nData_port.port_data_shift;
+
+    port_base_address = (void __iomem *) gpiod_get_bank_base(fpga_pdata.nWait_desc);
+    fpga_pdata.nWait_port.port_data_in = port_base_address + OMAP24XX_GPIO_DATAIN;
+    fpga_pdata.nWait_port.port_data_shift = desc_to_gpio(fpga_pdata.nWait_desc) - 32;
+    fpga_pdata.nWait_port.port_data_mask = (1) << fpga_pdata.nWait_port.port_data_shift;
+
     retval = halo_fpga_init();
     if (retval)
     	goto err5;
@@ -692,7 +727,3 @@ MODULE_AUTHOR("Sean Donohue");
 MODULE_DESCRIPTION("Halo FPGA character driver");
 MODULE_VERSION("0.0.1");
 MODULE_LICENSE("GPL");
-
-//MODULE_DEVICE_TABLE(of, halo_fpga_id_table);
-//module_init(halo_fpga_init);
-//module_exit(halo_fpga_exit);
