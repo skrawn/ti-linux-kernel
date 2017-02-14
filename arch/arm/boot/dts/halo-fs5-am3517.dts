@@ -118,6 +118,15 @@
             0x152 (PIN_INPUT | MUX_MODE0)  /* uart1_rx.uart1_rx */
         >;
     };
+
+    mcspi2_pins: pinmux_mcspi2_pin {
+        pinctrl-single,pins = <
+            0x1a6 (PIN_OUTPUT | MUX_MODE0)          /* mcspi2_clk.mcspi2_clk */
+            0x1a8 (PIN_OUTPUT | MUX_MODE0)          /* mcspi2_simo.mcspi2_simo */
+            0x1aa (PIN_INPUT | MUX_MODE0)           /* mcspi2_somi.mcspi2_somi */
+            0x1ac (PIN_OUTPUT_PULLUP | MUX_MODE0)   /* mcspi2_cs0.mcspi2_cs0 */
+        >;
+    };
 };
 
 &am35x_otg_hs {
@@ -219,6 +228,12 @@
 
 &mmc3 {
       status = "disabled";
+};
+
+&mcspi2 {
+    status = "okay";
+    pinctrl-names = "default";
+    pinctrl-0 = <&mcspi2_pins>;
 };
 
 &gpmc {
