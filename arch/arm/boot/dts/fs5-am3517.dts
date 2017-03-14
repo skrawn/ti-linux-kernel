@@ -186,14 +186,14 @@
 };
 
 &i2c2 {
-	clock-frequency = <400000>;
+	clock-frequency = <100000>;
 
     pinctrl-names = "default";
     pinctrl-0 = <&i2c2_pins>;
 
     status = "okay";
 
-    battery: smart-battery@b {
+    battery: sbs-battery@b {
         compatible = "ti,bq20z65", "sbs,sbs-battery";
         reg = <0xb>;
         battery-name = "battery";
@@ -230,11 +230,11 @@
       status = "disabled";
 };
 
-&mcspi2 {
+/*&mcspi2 {
     status = "okay";
     pinctrl-names = "default";
     pinctrl-0 = <&mcspi2_pins>;
-};
+};*/
 
 &gpmc {
 	ranges = <0 0 0x00000000 0x20000000>;

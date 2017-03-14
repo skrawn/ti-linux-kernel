@@ -179,14 +179,14 @@
 };
 
 &i2c2 {
-	clock-frequency = <400000>;
+	clock-frequency = <100000>;
 
     pinctrl-names = "default";
     pinctrl-0 = <&i2c2_pins>;
 
     status = "okay";
 
-    battery: smart-battery@b {
+    battery: sbs-battery@b {
         compatible = "ti,bq20z65", "sbs,sbs-battery";
         reg = <0xb>;
         battery-name = "battery";
