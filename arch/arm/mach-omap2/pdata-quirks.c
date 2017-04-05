@@ -20,14 +20,17 @@
 #include <linux/mmc/host.h>
 #include <linux/regulator/machine.h>
 #include <linux/regulator/fixed.h>
+#include <linux/spi/spi.h>
 #include <linux/usb/musb.h>
 #include <linux/usb/usb_phy_generic.h>
 
+#include <linux/platform_data/ad7298.h>
 #include <linux/platform_data/gpio-omap.h>
-#include <linux/platform_data/pinctrl-single.h>
 #include <linux/platform_data/iommu-omap.h>
-#include <linux/platform_data/wkup_m3.h>
 #include <linux/platform_data/pca953x.h>
+#include <linux/platform_data/pinctrl-single.h>
+#include <linux/platform_data/spi-omap2-mcspi.h>
+#include <linux/platform_data/wkup_m3.h>
 
 #include <mach/irqs.h>
 
@@ -248,10 +251,10 @@ static void __init omap3_sbc_t3517_legacy_init(void)
 	omap3_sbc_t3517_wifi_init();
 }
 
-static struct omap_musb_board_data usb_otg_brd_data = {	
+static struct omap_musb_board_data usb_otg_brd_data = {
 	.interface_type = MUSB_INTERFACE_ULPI,
 	.mode = MUSB_OTG,
-	.power = 100,	
+	.power = 100,
 	.set_phy_power = am35x_musb_phy_power,
 	.clear_irq = am35x_musb_clear_irq,
 	.set_mode = am35x_set_mode,
@@ -265,7 +268,7 @@ static struct ehci_hcd_omap_platform_data ehci_data = {
 
 	.reset_gpio_port[0] 	= 57,
 	.reset_gpio_port[1]		= -EINVAL,
-	.reset_gpio_port[2]		= -EINVAL,	
+	.reset_gpio_port[2]		= -EINVAL,
 
 	.phy_reset 				= 1,
 };
@@ -300,31 +303,31 @@ static struct usbhs_omap_platform_data usbhs_pdata = {
 #define HALO_TEC1_EN				HALO_ANALOG_BOARD_EXP_BASE + 2
 #define HALO_TEC2_EN				HALO_ANALOG_BOARD_EXP_BASE + 3
 
-static int halo_analog_board_io_expander_setup(struct i2c_client *client, unsigned gpio, 
+static int halo_analog_board_io_expander_setup(struct i2c_client *client, unsigned gpio,
 							unsigned ngpio, void *context)
 {
 	int ret;
 
 	ret = gpio_request(HALO_ANALOG_PWR_EN, "analog_pwr_en");
 	if (ret) {
-		printk(KERN_ERR "Failed to request analog_pwr_en\n");		
+		printk(KERN_ERR "Failed to request analog_pwr_en\n");
 	}
 
 	ret = gpio_request(HALO_LED_EN, "led_en");
 	if (ret) {
-		printk(KERN_ERR "Failed to request led_en\n");		
+		printk(KERN_ERR "Failed to request led_en\n");
 	}
 
 	ret = gpio_request(HALO_TEC1_EN, "tec1_en");
 	if (ret) {
-		printk(KERN_ERR "Failed to request tec1_en\n");		
+		printk(KERN_ERR "Failed to request tec1_en\n");
 	}
 
 	ret = gpio_request(HALO_TEC2_EN, "tec2_en");
 	if (ret) {
-		printk(KERN_ERR "Failed to request tec2_en\n");		
+		printk(KERN_ERR "Failed to request tec2_en\n");
 	}
-	
+
 	gpio_direction_output(HALO_ANALOG_PWR_EN, 1);
 	gpio_direction_output(HALO_LED_EN, 1);
 	gpio_direction_output(HALO_TEC1_EN, 1);
@@ -333,7 +336,7 @@ static int halo_analog_board_io_expander_setup(struct i2c_client *client, unsign
 	return 0;
 }
 
-static int halo_analog_board_io_expander_teardown(struct i2c_client *client, unsigned gpio, 
+static int halo_analog_board_io_expander_teardown(struct i2c_client *client, unsigned gpio,
 							unsigned ngpio, void *context)
 {
 	gpio_set_value(HALO_ANALOG_PWR_EN, 0);
@@ -375,51 +378,51 @@ static struct pca953x_platform_data halo_analog_board_expander_info = {
 #define HALO_EXP_NC_1				HALO_POWER_BOARD_EXP_BASE + 15
 
 
-int halo_power_board_io_expander_setup(struct i2c_client *client, unsigned gpio, 
+int halo_power_board_io_expander_setup(struct i2c_client *client, unsigned gpio,
 							unsigned ngpio, void *context)
 {
 	int ret;
 
 	ret = gpio_request(HALO_LOW_POWERn, "low_powern");
 	if (ret) {
-		printk(KERN_ERR "Failed to request low_powern\n");		
+		printk(KERN_ERR "Failed to request low_powern\n");
 	}
 
 	ret = gpio_request(HALO_LOW_BATn, "low_batn");
 	if (ret) {
-		printk(KERN_ERR "Failed to request low_batn\n");		
+		printk(KERN_ERR "Failed to request low_batn\n");
 	}
 
 	ret = gpio_request(HALO_LAMP_FAULTn, "lamp_faultn");
 	if (ret) {
-		printk(KERN_ERR "Failed to request lamp_faultn\n");		
+		printk(KERN_ERR "Failed to request lamp_faultn\n");
 	}
 
 	ret = gpio_request(HALO_REF_COLLECTOR, "ref_collect");
 	if (ret) {
-		printk(KERN_ERR "Failed to request ref_collect\n");		
+		printk(KERN_ERR "Failed to request ref_collect\n");
 	}
 
 	/* Stepper related GPIOs are not used */
 
-	ret = gpio_request(HALO_SWIR_LED_CATH, "swir_led_cath");	
+	ret = gpio_request(HALO_SWIR_LED_CATH, "swir_led_cath");
 	if (ret) {
-		printk(KERN_ERR "Failed to request swir_led_cath\n");		
+		printk(KERN_ERR "Failed to request swir_led_cath\n");
 	}
 
-	ret = gpio_request(HALO_BLDC_SWITCH, "bldc_switch");	
+	ret = gpio_request(HALO_BLDC_SWITCH, "bldc_switch");
 	if (ret) {
-		printk(KERN_ERR "Failed to request bldc_switch\n");		
+		printk(KERN_ERR "Failed to request bldc_switch\n");
 	}
 
-	ret = gpio_request(HALO_LAMP_SWITCH, "lamp_switch");	
+	ret = gpio_request(HALO_LAMP_SWITCH, "lamp_switch");
 	if (ret) {
-		printk(KERN_ERR "Failed to request lamp_switch\n");		
+		printk(KERN_ERR "Failed to request lamp_switch\n");
 	}
 
-	ret = gpio_request(HALO_FAN_SWITCH, "fan_switch");	
+	ret = gpio_request(HALO_FAN_SWITCH, "fan_switch");
 	if (ret) {
-		printk(KERN_ERR "Failed to request fan_switch\n");		
+		printk(KERN_ERR "Failed to request fan_switch\n");
 	}
 
 	gpio_direction_input(HALO_LOW_POWERn);
@@ -427,15 +430,15 @@ int halo_power_board_io_expander_setup(struct i2c_client *client, unsigned gpio,
 	gpio_direction_input(HALO_LAMP_FAULTn);
 	gpio_direction_input(HALO_REF_COLLECTOR);
 
-	gpio_direction_output(HALO_SWIR_LED_CATH, 0);	
-	gpio_direction_output(HALO_BLDC_SWITCH, 1);	
-	gpio_direction_output(HALO_LAMP_SWITCH, 1);	
-	gpio_direction_output(HALO_FAN_SWITCH, 1);	
+	gpio_direction_output(HALO_SWIR_LED_CATH, 0);
+	gpio_direction_output(HALO_BLDC_SWITCH, 1);
+	gpio_direction_output(HALO_LAMP_SWITCH, 1);
+	gpio_direction_output(HALO_FAN_SWITCH, 1);
 
 	return 0;
 }
 
-int halo_power_board_io_expander_teardown(struct i2c_client *client, unsigned gpio, 
+int halo_power_board_io_expander_teardown(struct i2c_client *client, unsigned gpio,
 							unsigned ngpio, void *context)
 {
 	gpio_set_value(HALO_SWIR_LED_CATH, 0);
@@ -450,7 +453,7 @@ int halo_power_board_io_expander_teardown(struct i2c_client *client, unsigned gp
 	gpio_free(HALO_SWIR_LED_CATH);
 	gpio_free(HALO_BLDC_SWITCH);
 	gpio_free(HALO_LAMP_SWITCH);
-	gpio_free(HALO_FAN_SWITCH);	
+	gpio_free(HALO_FAN_SWITCH);
 
 	return 0;
 }
@@ -469,7 +472,7 @@ static struct i2c_board_info __initdata halo_am3517_i2c3_boardinfo[] = {
 	},
 	{
 		I2C_BOARD_INFO("tca6416", 0x21),
-		.platform_data = &halo_power_board_expander_info,		
+		.platform_data = &halo_power_board_expander_info,
 	},
 };
 
@@ -482,14 +485,30 @@ struct usbhs_phy_data usbhs_phy = {
 	.reset_gpio = 57,
 };
 
+struct omap2_mcspi_device_config adc_controller_data __initdata = {
+	.turbo_mode = 0,
+	.cs_per_word = 0,
+};
+
+static struct spi_board_info adc_board_info[] __initdata = {
+	{
+		.modalias = "ad7298",
+		.max_speed_hz = 20000000,
+		.bus_num = 1,
+		.chip_select = 2,
+		.mode = SPI_MODE_1,
+		.controller_data = &adc_controller_data,
+	}
+};
+
 static void __init am3517_evm_legacy_init(void)
-{	
+{
 	omap3_mux_init(board_mux, OMAP_PACKAGE_CBB);
 
 	am35xx_emac_reset();
-	hsmmc2_internal_input_clk();	
+	hsmmc2_internal_input_clk();
 
-	usb_musb_init(&usb_otg_brd_data);	
+	usb_musb_init(&usb_otg_brd_data);
 
 	usbhs_init_phys(&usbhs_phy, 1);
 	usbhs_init(&usbhs_pdata);
@@ -499,7 +518,7 @@ static void __init halo_am3517_legacy_init(void)
 {
 	omap3_mux_init(board_mux, OMAP_PACKAGE_CBB);
 
-	hsmmc2_internal_input_clk();	
+	hsmmc2_internal_input_clk();
 
 	usb_musb_init(&usb_otg_brd_data);
 
@@ -508,6 +527,8 @@ static void __init halo_am3517_legacy_init(void)
 
 	omap_register_i2c_bus(3, 400, halo_am3517_i2c3_boardinfo,
 		ARRAY_SIZE(halo_am3517_i2c3_boardinfo));
+		
+	spi_register_board_info(adc_board_info, ARRAY_SIZE(adc_board_info));		
 }
 
 static void __init fs5_am3517_legacy_init(void)
@@ -524,6 +545,8 @@ static void __init fs5_am3517_legacy_init(void)
 
 	omap_register_i2c_bus(3, 400, halo_am3517_i2c3_boardinfo,
 		ARRAY_SIZE(halo_am3517_i2c3_boardinfo));
+
+	spi_register_board_info(adc_board_info, ARRAY_SIZE(adc_board_info));
 }
 
 static struct platform_device omap3_rom_rng_device = {

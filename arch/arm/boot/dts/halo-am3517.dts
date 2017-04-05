@@ -112,6 +112,16 @@
         >;
     };
 
+    mcspi1_pins: pinmux_mcspi1_pins {
+		pinctrl-single,pins = <
+			0x198 (PIN_INPUT_PULLUP | MUX_MODE0) 	/* mcspi1_clk.mcspi1_clk */
+			0x19a (PIN_INPUT_PULLUP | MUX_MODE0)	/* mcspi1_simo.mcspi1_simo */
+			0x19c (PIN_INPUT_PULLUP | MUX_MODE0)	/* mcspi1_somi.mcspi1_somi */
+			0x1a0 (PIN_INPUT_PULLUP | MUX_MODE0)	/* mcspi1_cs1.mcspi1_cs1 */
+			0x1a2 (PIN_INPUT_PULLUP | MUX_MODE0)	/* mcspi1_cs2.mcspi1_cs2 */
+		>;
+	};
+
     mcspi2_pins: pinmux_mcspi2_pin {
         pinctrl-single,pins = <
             0x1a6 (PIN_OUTPUT | MUX_MODE0)          /* mcspi2_clk.mcspi2_clk */
@@ -216,6 +226,12 @@
 
 &mmc3 {
     status = "disabled";
+};
+
+&mcspi1 {
+	status = "okay";
+	pinctrl-names = "default";
+	pinctrl-0 = <&mcspi1_pins>;
 };
 
 &mcspi2 {
