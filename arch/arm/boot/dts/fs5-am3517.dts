@@ -25,6 +25,20 @@
 		reg = <0x80000000 0x10000000>; /* 256 MB */
 	};
 
+    wlan_en_reg: fixedregulator@2 {
+        compatible = "regulator-fixed";
+        regulator-name = "wlan-en-regulator";
+        regulator-min-microvolt = <3300000>;
+        regulator-max-microvolt = <3300000>;
+
+        /*GPIO3 pin that drives WLAN_EN*/
+        gpio = <&gpio1 3 0>;
+
+        startup-delay-us = <70000>;
+        enable-active-high;
+	    regulator-always-on;
+    };
+
     fpga_spectro: fpga_spectro {
         compatible = "asd,fs5";
 
@@ -46,6 +60,14 @@
         nreset-gpios = <&gpio5 22 GPIO_ACTIVE_LOW>;
         nint3-gpios = <&gpio5 23 0>;
         nint-gpios = <&gpio2 29 0>;
+    };
+};
+
+&omap3_pmx_wkup {
+    wl12xx_wkup_pins: pinmux_wl12xx_wkup_pins {
+        pinctrl-single,pins = <
+            0x00c (PIN_OUTPUT | MUX_MODE4)       /*sys_boot1.gpio_3 - WLAN_EN*/ 
+        >;
     };
 };
 
@@ -76,6 +98,28 @@
             0x194 (PIN_INPUT | MUX_MODE0)    /* i2c3_sda.i2c3_sda */
         >;
     };
+
+    mmc2_pins: pinmux_mmc2_pins {
+        pinctrl-single,pins = <
+            0x128 (PIN_INPUT_PULLUP | MUX_MODE0)	/* sdmmc2_clk.sdmmc2_clk */
+            0x12a (PIN_INPUT_PULLUP | MUX_MODE0)	/* sdmmc2_cmd.sdmmc2_cmd */
+            0x12c (PIN_INPUT_PULLUP | MUX_MODE0)	/* sdmmc2_dat0.sdmmc2_dat0 */
+            0x12e (PIN_INPUT_PULLUP | MUX_MODE0)	/* sdmmc2_dat1.sdmmc2_dat1 */
+            0x130 (PIN_INPUT_PULLUP | MUX_MODE0)	/* sdmmc2_dat2.sdmmc2_dat2 */
+            0x132 (PIN_INPUT_PULLUP | MUX_MODE0)	/* sdmmc2_dat3.sdmmc2_dat3 */
+            0x134 (PIN_INPUT_PULLUP | MUX_MODE1)     /* sdmmc2_dat4.sdmmc2_dir_dat0 */
+            0x136 (PIN_INPUT_PULLUP | MUX_MODE1)     /* sdmmc2_dat5.sdmmc2_dir_dat1 */
+            0x138 (PIN_INPUT_PULLUP | MUX_MODE1)     /* sdmmc2_dat6.sdmmc2_dir_cmd */
+            0x13a (PIN_INPUT_PULLUP | MUX_MODE1)     /* sdmmc2_dat7.sdmmc2_clkin */
+        >;
+    };
+
+    wl12xx_core_pins: pinmux_wl12xx_core_pins {
+		pinctrl-single,pins = <
+			0x196 (PIN_INPUT_PULLUP | MUX_MODE4)	 /* hdq_sio.gpio_170 - WLAN_IRQ*/
+            0x126 (PIN_OUTPUT_PULLDOWN | MUX_MODE4)  /* sdmmc1_dat7.gpio_129 - WLAN_nOE */
+		>;
+	};
 
     /* This is the one on the analog board */
     ana_mux_pins: pinmux_ana_mux_pins {
@@ -233,7 +277,23 @@
 };
 
 &mmc2 {
-      status = "disabled";
+    status = "okay";
+    ti,non-removable;
+    vmmc-supply = <&wlan_en_reg>;
+    bus-width = <4>;
+    cap-power-off-card;
+    pinctrl-names = "default";
+    pinctrl-0 = <&mmc2_pins>, <&wl12xx_core_pins>, <&wl12xx_wkup_pins>;
+
+    #address-cells = <1>;
+    #size-cells = <0>;
+    wlcore: wlcore@2 {
+        compatible = "ti,wl1271";
+        reg = <2>;
+        interrupt-parent = <&gpio6>;
+        interrupts = <10 IRQ_TYPE_LEVEL_HIGH>;
+        ref-clock-frequency = <26000000>;
+    };
 };
 
 &mmc3 {

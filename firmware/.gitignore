@@ -4,3 +4,4 @@
 *.csp
 *.dsp
 ihex2fw
+!wl1271-nvs.bin
