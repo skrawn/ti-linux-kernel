@@ -468,15 +468,44 @@ static struct pca953x_platform_data halo_power_board_expander_info = {
 static struct i2c_board_info __initdata halo_am3517_i2c3_boardinfo[] = {
 	{
 		I2C_BOARD_INFO("tca6416", 0x20),
-		.platform_data = &halo_analog_board_expander_info,
+		.platform_data = &halo_analog_board_expander_info,		
 	},
 	{
 		I2C_BOARD_INFO("tca6416", 0x21),
-		.platform_data = &halo_power_board_expander_info,
+		.platform_data = &halo_power_board_expander_info,		
 	},
 };
 
-static struct omap_board_mux board_mux[] __initdata = {
+int halo_ui_board_io_expander_setup(struct i2c_client *client, unsigned gpio,
+	unsigned ngpio, void *context)
+{
+	return 0;
+}
+
+int halo_ui_board_io_expander_teardown(struct i2c_client *client, unsigned gpio,
+	unsigned ngpio, void *context)
+{
+	return 0;
+}
+
+static struct pca953x_platform_data halo_ui_board_expander_info = {
+	.gpio_base = OMAP_MAX_GPIO_LINES + 32,
+	.invert = 0,	
+	.setup = halo_ui_board_io_expander_setup,
+	.teardown = halo_ui_board_io_expander_teardown,
+};
+
+static struct i2c_board_info __initdata halo_am3517_i2c2_boardinfo[] = {
+	{
+		I2C_BOARD_INFO("tca6416", 0x20),
+		.platform_data = &halo_ui_board_expander_info,		
+	}	
+};
+
+static struct omap_board_mux board_mux[] __initdata = {	
+	OMAP3_MUX(MCBSP2_CLKX, OMAP_MUX_MODE4 | OMAP_PIN_INPUT_PULLUP),	/* mcbsp2_clkx.gpio_117 - GPIO_INT1# */
+	OMAP3_MUX(MCBSP2_FSX, OMAP_MUX_MODE4 | OMAP_PIN_INPUT_PULLUP),	/* mcbsp2_fsx.gpio_116 - GPIO_INT2# */
+	OMAP3_MUX(MCBSP2_DX, OMAP_MUX_MODE4 | OMAP_PIN_INPUT_PULLUP),	/* mcbsp2_dx.gpio_119 - GPIO_INT3# */
 	{ .reg_offset = OMAP_MUX_TERMINATOR },
 };
 
@@ -523,7 +552,16 @@ static void __init halo_am3517_legacy_init(void)
 	usb_musb_init(&usb_otg_brd_data);
 
 	usbhs_init_phys(&usbhs_phy, 1);
-	usbhs_init(&usbhs_pdata);
+	usbhs_init(&usbhs_pdata);	
+
+	// IRQ numbers are determined at runtime, so need to update the board info here	to 
+	// associate these IO expanders with their GPIO interrupt lines.
+	halo_am3517_i2c2_boardinfo[0].irq = gpio_to_irq(116);
+	halo_am3517_i2c3_boardinfo[0].irq = gpio_to_irq(119);
+	halo_am3517_i2c3_boardinfo[1].irq = gpio_to_irq(117);
+
+	omap_register_i2c_bus(2, 100, halo_am3517_i2c2_boardinfo,
+		ARRAY_SIZE(halo_am3517_i2c2_boardinfo));
 
 	omap_register_i2c_bus(3, 400, halo_am3517_i2c3_boardinfo,
 		ARRAY_SIZE(halo_am3517_i2c3_boardinfo));
@@ -541,7 +579,16 @@ static void __init fs5_am3517_legacy_init(void)
 	usb_musb_init(&usb_otg_brd_data);
 
 	usbhs_init_phys(&usbhs_phy, 1);
-	usbhs_init(&usbhs_pdata);
+	usbhs_init(&usbhs_pdata);	
+
+	// IRQ numbers are determined at runtime, so need to update the board info here	to 
+	// associate these IO expanders with their GPIO interrupt lines.
+	halo_am3517_i2c2_boardinfo[0].irq = gpio_to_irq(116);
+	halo_am3517_i2c3_boardinfo[0].irq = gpio_to_irq(119);
+	halo_am3517_i2c3_boardinfo[1].irq = gpio_to_irq(117);
+
+	omap_register_i2c_bus(2, 100, halo_am3517_i2c2_boardinfo,
+		ARRAY_SIZE(halo_am3517_i2c2_boardinfo));
 
 	omap_register_i2c_bus(3, 400, halo_am3517_i2c3_boardinfo,
 		ARRAY_SIZE(halo_am3517_i2c3_boardinfo));

@@ -120,21 +120,7 @@
             0x126 (PIN_OUTPUT_PULLDOWN | MUX_MODE4)  /* sdmmc1_dat7.gpio_129 - WLAN_nOE */
 		>;
 	};
-
-    /* This is the one on the analog board */
-    ana_mux_pins: pinmux_ana_mux_pins {
-        pinctrl-single,pins = <
-            0x112 (PIN_INPUT_PULLUP | MUX_MODE4)    /* mcbsp2_dx.gpio_119 - GPIO_INT3# */
-        >;
-    };
-
-    /* This is the one on the power board */
-    pwr_mux_pins: pinmux_pwr_mux_pins {
-        pinctrl-single,pins = <
-            0x10e (PIN_INPUT_PULLUP | MUX_MODE4)    /* mcbsp2_clkx.gpio_117 - GPIO_INT1# */
-        >;
-    };
-
+    
     fpga_pins: pinmux_fpga_pins {
         pinctrl-single,pins = <
             0x04e (PIN_INPUT | MUX_MODE4)           /* gpmc_a3.gpio_36 - BiDi[0] */
@@ -150,8 +136,7 @@
             0x04a (PIN_OUTPUT_PULLUP | MUX_MODE4)   /* gpmc_a1.gpio_34 - nADDR_STROBE */
             0x084 (PIN_OUTPUT_PULLUP | MUX_MODE4)   /* gpmc_ncs3.gpio_54 - nDATA_STROBE */
             0x09e (PIN_INPUT | MUX_MODE4)           /* gpmc_wait1.gpio_63 - nWAIT */
-            0x110 (PIN_OUTPUT_PULLUP | MUX_MODE4)   /* mcbsp2_dr.gpio_118 - nFGPA_RESET */
-            0x112 (PIN_INPUT_PULLUP | MUX_MODE4)    /* mcbsp2_dx.gpio_119 - nGPIO_INT3 */
+            0x110 (PIN_OUTPUT_PULLUP | MUX_MODE4)   /* mcbsp2_dr.gpio_118 - nFGPA_RESET */            
             0x098 (PIN_INPUT | MUX_MODE4)           /* gpmc_nbe1.gpio_61 - INTERRUPT */
         >;
     };

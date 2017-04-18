@@ -70,20 +70,6 @@
         >;
     };
 
-    /* This is the one on the analog board */
-    ana_mux_pins: pinmux_ana_mux_pins {
-        pinctrl-single,pins = <
-            0x112 (PIN_INPUT_PULLUP | MUX_MODE4)    /* mcbsp2_dx.gpio_119 - GPIO_INT3# */
-        >;
-    };
-
-    /* This is the one on the power board */
-    pwr_mux_pins: pinmux_pwr_mux_pins {
-        pinctrl-single,pins = <
-            0x10e (PIN_INPUT_PULLUP | MUX_MODE4)    /* mcbsp2_clkx.gpio_117 - GPIO_INT1# */
-        >;
-    };
-
     fpga_pins: pinmux_fpga_pins {
         pinctrl-single,pins = <
             0x114 (PIN_INPUT | MUX_MODE4)           /* mmc1_clk.gpio_120 - BiDi[0] */
@@ -99,8 +85,7 @@
             0x1cc (PIN_OUTPUT_PULLUP | MUX_MODE4)   /* ccdc_data7.gpio_106 - nADDR_STROBE */
             0x1b8 (PIN_OUTPUT_PULLUP | MUX_MODE4)   /* ccdc_hd.gpio_96 - nDATA_STROBE */
             0x1c0 (PIN_INPUT | MUX_MODE4)           /* ccdc_data1.gpio_100 - nWAIT */
-            0x110 (PIN_OUTPUT_PULLUP | MUX_MODE4)   /* mcbsp2_dr.gpio_118 - nFGPA_RESET */
-            0x112 (PIN_INPUT_PULLUP | MUX_MODE4)    /* mcbsp2_dx.gpio_119 - nGPIO_INT3 */
+            0x110 (PIN_OUTPUT_PULLUP | MUX_MODE4)   /* mcbsp2_dr.gpio_118 - nFGPA_RESET */            
             0x126 (PIN_INPUT | MUX_MODE4)           /* mmc1_dat7.gpio_129 - INTERRUPT */
         >;
     };
@@ -206,8 +191,12 @@
 };
 
 &i2c3 {
-    /* Will be initialized in pdata-quirks */
-    status = "disabled";
+	clock-frequency = <400000>;
+
+    pinctrl-names = "default";
+    pinctrl-0 = <&i2c3_pins>;
+
+    status = "okay";
 };
 
 &uart1 {
