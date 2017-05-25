@@ -5,3 +5,4 @@
 *.dsp
 ihex2fw
 !wl1271-nvs.bin
+!wl127x-fw-5-sr.bin
