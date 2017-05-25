@@ -41,7 +41,7 @@
 #include "scan.h"
 #include "hw_ops.h"
 #include "sysfs.h"
-
+#include "productid_files/omap3logic-old-productid.h"
 #define WL1271_BOOT_RETRIES 3
 
 static char *fwlog_param;
@@ -6428,16 +6428,38 @@ static void wlcore_nvs_cb(const struct firmware *fw, void *context)
 	struct platform_device *pdev = wl->pdev;
 	struct wlcore_platdev_data *pdev_data = dev_get_platdata(&pdev->dev);
 	struct resource *res;
-
-	int ret;
 	irq_handler_t hardirq_fn = NULL;
 
+	int ret;
+	int invalid;
+	u8 mac[6];
+	
+	invalid = omap3logic_fetch_old_production_data();
+	
+	if (invalid)
+	{
+		wl1271_error("wlcore: production data is not valid");
+		goto out; 
+	}
+	
 	if (fw) {
 		wl->nvs = kmemdup(fw->data, fw->size, GFP_KERNEL);
+
+		//Retreive MAC Address from EEPROM
+		omap3logic_extract_old_wifi_ethaddr(mac);
+		//Assign MAC address in reverse endianess
+		((u8*)wl->nvs)[3] = mac[5];
+		((u8*)wl->nvs)[4] = mac[4];
+		((u8*)wl->nvs)[5] = mac[3];
+		((u8*)wl->nvs)[6] = mac[2];
+		((u8*)wl->nvs)[10] = mac[1];
+		((u8*)wl->nvs)[11] = mac[0];
+		
 		if (!wl->nvs) {
 			wl1271_error("Could not allocate nvs data");
 			goto out;
 		}
+		
 		wl->nvs_len = fw->size;
 	} else {
 		wl1271_debug(DEBUG_BOOT, "Could not get nvs file %s",

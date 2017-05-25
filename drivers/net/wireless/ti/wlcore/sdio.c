@@ -35,6 +35,8 @@
 #include <linux/printk.h>
 #include <linux/of.h>
 #include <linux/of_irq.h>
+#include <linux/gpio.h>
+#include <linux/of_gpio.h>
 
 #include "wlcore.h"
 #include "wl12xx_80211.h"
@@ -82,7 +84,6 @@ static int __must_check wl12xx_sdio_raw_read(struct device *child, int addr,
 	sdio_claim_host(func);
 
 	if (unlikely(dump)) {
-		printk(KERN_DEBUG "wlcore_sdio: READ from 0x%04x\n", addr);
 		print_hex_dump(KERN_DEBUG, "wlcore_sdio: READ ",
 				DUMP_PREFIX_OFFSET, 16, 1,
 				buf, len, false);
@@ -120,7 +121,6 @@ static int __must_check wl12xx_sdio_raw_write(struct device *child, int addr,
 	sdio_claim_host(func);
 
 	if (unlikely(dump)) {
-		printk(KERN_DEBUG "wlcore_sdio: WRITE to 0x%04x\n", addr);
 		print_hex_dump(KERN_DEBUG, "wlcore_sdio: WRITE ",
 				DUMP_PREFIX_OFFSET, 16, 1,
 				buf, len, false);
@@ -270,11 +270,32 @@ static int wl1271_probe(struct sdio_func *func,
 	mmc_pm_flag_t mmcflags;
 	int ret = -ENOMEM;
 	int irq;
+	int nOE_pin;
 	const char *chip_family;
 
 	/* We are only able to handle the wlan function */
 	if (func->num != 0x02)
 		return -ENODEV;
+
+	nOE_pin = of_get_named_gpio(func->dev.of_node, "nOE",0);
+	if(nOE_pin > 0)
+	{
+		if (gpio_request(nOE_pin, "level_shifter_!OE") != 0)
+		{
+			dev_err(&func->dev, "failed to request nOE pin\n");
+			goto out;
+		}
+		
+		if (gpio_direction_output(nOE_pin, 0) != 0) {
+			dev_err(&func->dev, "failed to drive nOE pin low\n");
+			goto out;	
+		}
+	}
+	else {
+		dev_err(&func->dev, "unable to get nOE pin\n");
+		goto out;
+	}
+	
 
 	memset(&pdev_data, 0x00, sizeof(pdev_data));
 	pdev_data.if_ops = &sdio_ops;

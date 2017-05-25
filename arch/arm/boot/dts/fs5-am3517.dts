@@ -36,7 +36,6 @@
 
         startup-delay-us = <70000>;
         enable-active-high;
-	    regulator-always-on;
     };
 
     fpga_spectro: fpga_spectro {
@@ -67,6 +66,8 @@
     wl12xx_wkup_pins: pinmux_wl12xx_wkup_pins {
         pinctrl-single,pins = <
             0x00c (PIN_OUTPUT | MUX_MODE4)       /*sys_boot1.gpio_3 - WLAN_EN*/ 
+            0x010 (PIN_INPUT_PULLUP | MUX_MODE4)       /*sys_boot1.gpio_5 - SCL*/
+            0x016 (PIN_INPUT_PULLUP | MUX_MODE4)       /*sys_boot1.gpio_8 - SDA*/
         >;
     };
 };
@@ -274,6 +275,7 @@
     #size-cells = <0>;
     wlcore: wlcore@2 {
         compatible = "ti,wl1271";
+        nOE = <&gpio5 1 0>;
         reg = <2>;
         interrupt-parent = <&gpio6>;
         interrupts = <10 IRQ_TYPE_LEVEL_HIGH>;
