@@ -33,7 +33,6 @@ MODULE_PARM_DESC(trans_strobe_delay, "End of write transaction strobe delay time
 #define DEVICE_NAME				"fpga_spectro"
 #define CHAR_DEVICE_NAME        "halo_fpga"
 #define CLASS_NAME              "asd"
-#define DISABLE_SPIN_LOCKS      (0)
 
 static int     dev_open(struct inode *, struct file *);
 static int     dev_release(struct inode *, struct file *);
@@ -109,10 +108,6 @@ static const struct of_device_id halo_fpga_id_table[] = {
 #define CMD_READ_DATA               0x04
 
 #define STATUS_REG_ADDR             0x0E
-
-#if !DISABLE_SPIN_LOCKS
-static DEFINE_SPINLOCK(fpga_lock);
-#endif
 
 // gpiolib functions have too much over-head. Must use register direct writing
 // for optimal timing.
@@ -452,8 +447,7 @@ static ssize_t dev_read(struct file *filep, char *buffer, size_t len, loff_t *of
 {
     uint8_t *data;
     uint8_t cmd;
-    ssize_t retval = len;
-    unsigned long flags;
+    ssize_t retval = len;    
 
     if (len < 2) {
         dev_warn(&fpga_pdata.pdev->dev, "Invalid command for read 0x%x\n", buffer[0]);
@@ -468,10 +462,6 @@ static ssize_t dev_read(struct file *filep, char *buffer, size_t len, loff_t *of
         goto out;
     }
 
-#if !DISABLE_SPIN_LOCKS
-    spin_lock_irqsave(&fpga_lock, flags);
-#endif
-
     switch(cmd) {
     case CMD_READ_ADDR:
         retval = halo_fpga_read_addr((void *) data, (len - 1));
@@ -485,10 +475,6 @@ static ssize_t dev_read(struct file *filep, char *buffer, size_t len, loff_t *of
         retval = -EFAULT;
         break;
     }
-
-#if !DISABLE_SPIN_LOCKS
-    spin_unlock_irqrestore(&fpga_lock, flags);
-#endif
 
     if (retval > 0) {
         retval = copy_to_user(buffer, data, (len - 1));
@@ -514,8 +500,7 @@ out:
 static ssize_t dev_write(struct file *filep, const char *buffer, size_t len, loff_t *offset)
 {
     ssize_t retval = len;
-    uint8_t *cmd_buf;
-    unsigned long flags;
+    uint8_t *cmd_buf;    
 
     // Parse the command from the input character buffer
     if (len < 1) {
@@ -532,10 +517,6 @@ static ssize_t dev_write(struct file *filep, const char *buffer, size_t len, lof
         goto out1;
     }
 
-#if !DISABLE_SPIN_LOCKS
-    spin_lock_irqsave(&fpga_lock, flags);
-#endif
-
     switch (cmd_buf[0]) {
     case CMD_WRITE_ADDR:
         retval = halo_fpga_write_addr((const char *) &cmd_buf[1], 1);
@@ -548,10 +529,6 @@ static ssize_t dev_write(struct file *filep, const char *buffer, size_t len, lof
     default:
         retval = -EFAULT;
     }
-
-#if !DISABLE_SPIN_LOCKS
-    spin_unlock_irqrestore(&fpga_lock, flags);
-#endif
 
 out1:
     kfree(cmd_buf);
