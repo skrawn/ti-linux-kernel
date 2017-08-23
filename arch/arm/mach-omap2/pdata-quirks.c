@@ -519,7 +519,34 @@ struct omap2_mcspi_device_config adc_controller_data __initdata = {
 	.cs_per_word = 0,
 };
 
-static struct spi_board_info adc_board_info[] __initdata = {
+static struct spi_board_info fs5_dev_adc_board_info[] __initdata = {
+	{
+		.modalias = "ad7298",
+		.max_speed_hz = 20000000,
+		.bus_num = 1,
+		.chip_select = 2,
+		.mode = SPI_MODE_1,
+		.controller_data = &adc_controller_data,
+	}
+};
+
+static struct spi_board_info fs5_adc_board_info[] __initdata = {
+	{
+		.modalias = "ad7298",
+		.max_speed_hz = 20000000,
+		.bus_num = 1,
+		.chip_select = 0,
+		.mode = SPI_MODE_1,
+		.controller_data = &adc_controller_data,
+	},
+	{
+		.modalias = "ad7298",
+		.max_speed_hz = 20000000,
+		.bus_num = 1,
+		.chip_select = 1,
+		.mode = SPI_MODE_1,
+		.controller_data = &adc_controller_data,
+	},
 	{
 		.modalias = "ad7298",
 		.max_speed_hz = 20000000,
@@ -578,8 +605,285 @@ static void __init halo_am3517_legacy_init(void)
 	omap_register_i2c_bus(3, 400, halo_am3517_i2c3_boardinfo,
 		ARRAY_SIZE(halo_am3517_i2c3_boardinfo));
 		
-	spi_register_board_info(adc_board_info, ARRAY_SIZE(adc_board_info));		
+	spi_register_board_info(fs5_dev_adc_board_info, ARRAY_SIZE(fs5_dev_adc_board_info));		
 }
+
+static void __init fs5_am3517_dev_legacy_init(void)
+{
+	omap3_mux_init(board_mux, OMAP_PACKAGE_CBB);
+	
+	am35xx_emac_reset();
+	hsmmc2_internal_input_clk();
+
+	usb_musb_init(&usb_otg_brd_data);
+
+	usbhs_init_phys(&usbhs_phy, 1);
+	usbhs_init(&usbhs_pdata);	
+	
+	/*Drive the output enable for WL1271 module low*/
+	gpio_export(129, 0);
+		udelay(10);
+	gpio_direction_output(129, 0);
+		msleep(1);
+
+	// IRQ numbers are determined at runtime, so need to update the board info here	to 
+	// associate these IO expanders with their GPIO interrupt lines.
+	halo_am3517_i2c2_boardinfo[0].irq = gpio_to_irq(116);
+	halo_am3517_i2c3_boardinfo[0].irq = gpio_to_irq(119);
+	halo_am3517_i2c3_boardinfo[1].irq = gpio_to_irq(117);
+
+	omap_register_i2c_bus(2, 100, halo_am3517_i2c2_boardinfo,
+		ARRAY_SIZE(halo_am3517_i2c2_boardinfo));
+
+	omap_register_i2c_bus(3, 400, halo_am3517_i2c3_boardinfo,
+		ARRAY_SIZE(halo_am3517_i2c3_boardinfo));
+
+	spi_register_board_info(fs5_dev_adc_board_info, ARRAY_SIZE(fs5_dev_adc_board_info));
+}
+
+#define FS5_ANALOG_EXPANDER_BASE	OMAP_MAX_GPIO_LINES
+#define FS5_ANALOG_PWR_EN			FS5_ANALOG_EXPANDER_BASE
+#define FS5_VNIR_LED_EN				FS5_ANALOG_EXPANDER_BASE + 1
+#define FS5_TEC1_EN					FS5_ANALOG_EXPANDER_BASE + 2
+#define FS5_TEC2_EN					FS5_ANALOG_EXPANDER_BASE + 3
+#define FS5_TEC1_STATUS				FS5_ANALOG_EXPANDER_BASE + 4
+#define FS5_TEC2_STATUS				FS5_ANALOG_EXPANDER_BASE + 5
+#define FS5_GPIO1_6					FS5_ANALOG_EXPANDER_BASE + 6
+#define FS5_GPIO1_7					FS5_ANALOG_EXPANDER_BASE + 7
+#define FS5_USB0_OCn				FS5_ANALOG_EXPANDER_BASE + 8
+#define FS5_USB1_OCn				FS5_ANALOG_EXPANDER_BASE + 9
+#define FS5_ETH_RSTn				FS5_ANALOG_EXPANDER_BASE + 10
+#define FS5_STS_LED_EN				FS5_ANALOG_EXPANDER_BASE + 11
+#define FS5_GPIO1_14				FS5_ANALOG_EXPANDER_BASE + 12
+#define FS5_GPIO1_15				FS5_ANALOG_EXPANDER_BASE + 13
+#define FS5_GPIO1_16				FS5_ANALOG_EXPANDER_BASE + 14
+#define FS5_GPIO1_17				FS5_ANALOG_EXPANDER_BASE + 15
+
+int fs5_analog_io_expander_setup(struct i2c_client *client, unsigned gpio,
+	unsigned ngpio, void *context)
+{
+	int ret;
+	
+	ret = gpio_request(FS5_ANALOG_PWR_EN, "analog_pwr_en");
+	if (ret) {
+		printk(KERN_ERR "Failed to request analog_pwr_en\n");
+	}
+
+	ret = gpio_request(FS5_VNIR_LED_EN, "vnir_led_en");
+	if (ret) {
+		printk(KERN_ERR "Failed to request vnir_led_en\n");
+	}
+
+	ret = gpio_request(FS5_TEC1_EN, "tec1_en");
+	if (ret) {
+		printk(KERN_ERR "Failed to request tec1_en\n");
+	}
+
+	ret = gpio_request(FS5_TEC2_EN, "tec2_en");
+	if (ret) {
+		printk(KERN_ERR "Failed to request tec2_en\n");
+	}	
+
+	ret = gpio_request(FS5_TEC1_STATUS, "tec1_status");
+	if (ret) {
+		printk(KERN_ERR "Failed to request tec1_status\n");
+	}
+
+	ret = gpio_request(FS5_TEC2_STATUS, "tec2_status");
+	if (ret) {
+		printk(KERN_ERR "Failed to request tec2_status\n");
+	}
+
+	ret = gpio_request(FS5_USB0_OCn, "usb0_ocn");
+	if (ret) {
+		printk(KERN_ERR "Failed to request usb0_ocn\n");
+	}
+
+	ret = gpio_request(FS5_USB1_OCn, "usb1_ocn");
+	if (ret) {
+		printk(KERN_ERR "Failed to request usb1_ocn\n");
+	}
+
+	ret = gpio_request(FS5_ETH_RSTn, "eth_rstn");
+	if (ret) {
+		printk(KERN_ERR "Failed to request eth_rstn\n");
+	}
+
+	ret = gpio_request(FS5_STS_LED_EN, "sts_led_en");
+	if (ret) {
+		printk(KERN_ERR "Failed to request sts_led_en\n");
+	}
+
+	gpio_direction_input(FS5_TEC1_STATUS);	
+	gpio_direction_input(FS5_TEC2_STATUS);
+	gpio_direction_input(FS5_USB0_OCn);
+	gpio_direction_input(FS5_USB1_OCn);
+
+	gpio_direction_output(FS5_ANALOG_PWR_EN, 1);
+	gpio_direction_output(FS5_VNIR_LED_EN, 0);
+	gpio_direction_output(FS5_TEC1_EN, 1);
+	gpio_direction_output(FS5_TEC2_EN, 1);
+	gpio_direction_output(FS5_ETH_RSTn, 1);
+	gpio_direction_output(FS5_STS_LED_EN, 0);
+
+	return 0;
+}
+
+int fs5_analog_io_expander_teardown(struct i2c_client *client, unsigned gpio,
+	unsigned ngpio, void *context)
+{
+	gpio_set_value(FS5_ANALOG_PWR_EN, 0);
+	gpio_set_value(FS5_VNIR_LED_EN, 0);
+	gpio_set_value(FS5_TEC1_EN, 0);
+	gpio_set_value(FS5_TEC2_EN, 0);
+	gpio_set_value(FS5_ETH_RSTn, 1);
+	gpio_set_value(FS5_STS_LED_EN, 0);
+
+	gpio_free(FS5_TEC1_STATUS);	
+	gpio_free(FS5_TEC2_STATUS);
+	gpio_free(FS5_USB0_OCn);
+	gpio_free(FS5_USB1_OCn);
+	gpio_free(FS5_ANALOG_PWR_EN);
+	gpio_free(FS5_VNIR_LED_EN);
+	gpio_free(FS5_TEC1_EN);
+	gpio_free(FS5_TEC2_EN);
+	gpio_free(FS5_ETH_RSTn);
+	gpio_free(FS5_STS_LED_EN);
+	
+	return 0;
+}
+
+static struct pca953x_platform_data fs5_analog_expander_info = {
+	.gpio_base = FS5_ANALOG_EXPANDER_BASE,
+	.invert = 0,	
+	.setup = fs5_analog_io_expander_setup,
+	.teardown = fs5_analog_io_expander_teardown,
+};
+
+#define FS5_DIGITAL_EXPANDER_BASE	FS5_GPIO1_17 + 1
+#define FS5_GPIO2_0					FS5_DIGITAL_EXPANDER_BASE
+#define FS5_GPIO2_1					FS5_DIGITAL_EXPANDER_BASE + 1
+#define FS5_ACCY_FLTn				FS5_DIGITAL_EXPANDER_BASE + 2
+#define FS5_SWIR2_LED_EN			FS5_DIGITAL_EXPANDER_BASE + 3
+#define FS5_GPIO2_4					FS5_DIGITAL_EXPANDER_BASE + 4
+#define FS5_GPIO2_5					FS5_DIGITAL_EXPANDER_BASE + 5
+#define FS5_SWIR1_LED_EN			FS5_DIGITAL_EXPANDER_BASE + 6
+#define FS5_TRIG_LED_EN				FS5_DIGITAL_EXPANDER_BASE + 7
+#define FS5_ACCY_ENn				FS5_DIGITAL_EXPANDER_BASE + 8
+#define FS5_MOTOR_EN				FS5_DIGITAL_EXPANDER_BASE + 9
+#define FS5_LAMP_EN					FS5_DIGITAL_EXPANDER_BASE + 10
+#define FS5_FAN_EN					FS5_DIGITAL_EXPANDER_BASE + 11
+#define FS5_GPIO2_14				FS5_DIGITAL_EXPANDER_BASE + 12
+#define FS5_MOT_DIR_GPIO			FS5_DIGITAL_EXPANDER_BASE + 13
+#define FS5_GPIO2_16				FS5_DIGITAL_EXPANDER_BASE + 14
+#define FS5_GPIO2_17				FS5_DIGITAL_EXPANDER_BASE + 15
+
+int fs5_digital_io_expander_setup(struct i2c_client *client, unsigned gpio,
+	unsigned ngpio, void *context)
+{
+	int ret;
+	
+	ret = gpio_request(FS5_ACCY_FLTn, "accy_fltn");
+	if (ret) {
+		printk(KERN_ERR "Failed to request accy_fltn\n");
+	}
+
+	ret = gpio_request(FS5_SWIR2_LED_EN, "swir2_led_en");
+	if (ret) {
+		printk(KERN_ERR "Failed to request swir2_led_en\n");
+	}
+
+	ret = gpio_request(FS5_SWIR1_LED_EN, "swir1_led_en");
+	if (ret) {
+		printk(KERN_ERR "Failed to request swir1_led_en\n");
+	}
+
+	ret = gpio_request(FS5_TRIG_LED_EN, "trig_led_en");
+	if (ret) {
+		printk(KERN_ERR "Failed to request trig_led_en\n");
+	}	
+
+	ret = gpio_request(FS5_ACCY_ENn, "fs5_accy_enn");
+	if (ret) {
+		printk(KERN_ERR "Failed to request fs5_accy_enn\n");
+	}
+
+	ret = gpio_request(FS5_MOTOR_EN, "fs5_motor_en");
+	if (ret) {
+		printk(KERN_ERR "Failed to request fs5_motor_en\n");
+	}
+
+	ret = gpio_request(FS5_LAMP_EN, "lamp_en");
+	if (ret) {
+		printk(KERN_ERR "Failed to request lamp_en\n");
+	}
+
+	ret = gpio_request(FS5_FAN_EN, "fan_en");
+	if (ret) {
+		printk(KERN_ERR "Failed to request fan_en\n");
+	}
+
+	ret = gpio_request(FS5_MOT_DIR_GPIO, "motor_dir_gpio");
+	if (ret) {
+		printk(KERN_ERR "Failed to request motor_dir_gpio\n");
+	}
+
+	gpio_direction_input(FS5_ACCY_FLTn);	
+
+	gpio_direction_output(FS5_SWIR2_LED_EN, 0);
+	gpio_direction_output(FS5_SWIR1_LED_EN, 0);
+	gpio_direction_output(FS5_TRIG_LED_EN, 0);
+	gpio_direction_output(FS5_ACCY_ENn, 1);
+	gpio_direction_output(FS5_MOTOR_EN, 1);
+	gpio_direction_output(FS5_LAMP_EN, 0);
+	gpio_direction_output(FS5_FAN_EN, 1);
+	gpio_direction_output(FS5_MOT_DIR_GPIO, 0);
+
+	return 0;
+}
+
+int fs5_digital_io_expander_teardown(struct i2c_client *client, unsigned gpio,
+	unsigned ngpio, void *context)
+{
+	gpio_set_value(FS5_SWIR2_LED_EN, 0);
+	gpio_set_value(FS5_SWIR1_LED_EN, 0);
+	gpio_set_value(FS5_TRIG_LED_EN, 0);
+	gpio_set_value(FS5_ACCY_ENn, 1);
+	gpio_set_value(FS5_MOTOR_EN, 0);
+	gpio_set_value(FS5_LAMP_EN, 0);
+	gpio_set_value(FS5_FAN_EN, 0);
+	gpio_set_value(FS5_MOT_DIR_GPIO, 0);
+
+	gpio_free(FS5_ACCY_FLTn);
+	gpio_free(FS5_SWIR2_LED_EN);
+	gpio_free(FS5_SWIR1_LED_EN);
+	gpio_free(FS5_TRIG_LED_EN);
+	gpio_free(FS5_ACCY_ENn);
+	gpio_free(FS5_MOTOR_EN);
+	gpio_free(FS5_LAMP_EN);
+	gpio_free(FS5_FAN_EN);
+	gpio_free(FS5_MOT_DIR_GPIO);
+
+	return 0;
+}
+
+static struct pca953x_platform_data fs5_digital_expander_info = {
+	.gpio_base = FS5_DIGITAL_EXPANDER_BASE,
+	.invert = 0,	
+	.setup = fs5_digital_io_expander_setup,
+	.teardown = fs5_digital_io_expander_teardown,
+};
+
+static struct i2c_board_info __initdata fs5_i2c2_boardinfo[] = {
+	{
+		I2C_BOARD_INFO("tca6416", 0x20),
+		.platform_data = &fs5_analog_expander_info,		
+	},
+	{
+		I2C_BOARD_INFO("tca6416", 0x21),
+		.platform_data = &fs5_digital_expander_info,
+	}
+};
 
 static void __init fs5_am3517_legacy_init(void)
 {
@@ -601,17 +905,13 @@ static void __init fs5_am3517_legacy_init(void)
 
 	// IRQ numbers are determined at runtime, so need to update the board info here	to 
 	// associate these IO expanders with their GPIO interrupt lines.
-	halo_am3517_i2c2_boardinfo[0].irq = gpio_to_irq(116);
-	halo_am3517_i2c3_boardinfo[0].irq = gpio_to_irq(119);
-	halo_am3517_i2c3_boardinfo[1].irq = gpio_to_irq(117);
+	fs5_i2c2_boardinfo[0].irq = gpio_to_irq(116);
+	fs5_i2c2_boardinfo[1].irq = gpio_to_irq(117);
 
-	omap_register_i2c_bus(2, 100, halo_am3517_i2c2_boardinfo,
-		ARRAY_SIZE(halo_am3517_i2c2_boardinfo));
+	omap_register_i2c_bus(2, 100, fs5_i2c2_boardinfo,
+		ARRAY_SIZE(fs5_i2c2_boardinfo));	
 
-	omap_register_i2c_bus(3, 400, halo_am3517_i2c3_boardinfo,
-		ARRAY_SIZE(halo_am3517_i2c3_boardinfo));
-
-	spi_register_board_info(adc_board_info, ARRAY_SIZE(adc_board_info));
+	spi_register_board_info(fs5_adc_board_info, ARRAY_SIZE(fs5_adc_board_info));
 }
 
 static struct platform_device omap3_rom_rng_device = {
@@ -879,6 +1179,7 @@ static struct pdata_init pdata_quirks[] __initdata = {
 	{ "ti,am3517-evm", am3517_evm_legacy_init, },
 	{ "asd,halo-am3517", halo_am3517_legacy_init, },
 	{ "asd,fs5-am3517", fs5_am3517_legacy_init, },
+	{ "asd,fs5-am3517-dev", fs5_am3517_dev_legacy_init },
 	{ "technexion,omap3-tao3530", omap3_tao3530_legacy_init, },
 	{ "openpandora,omap3-pandora-600mhz", omap3_pandora_legacy_init, },
 	{ "openpandora,omap3-pandora-1ghz", omap3_pandora_legacy_init, },
