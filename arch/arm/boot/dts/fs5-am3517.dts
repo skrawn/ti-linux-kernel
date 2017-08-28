@@ -52,7 +52,7 @@
                       &gpio2 9 0
                       &gpio2 10 0
                       &gpio2 11 0>;
-        ndata-gpios = <&gpio2 22 GPIO_ACTIVE_LOW>;
+        ndata-gpios = <&gpio2 27 GPIO_ACTIVE_LOW>;
         naddr-gpios = <&gpio2 2 GPIO_ACTIVE_LOW>;
         nwrite-gpios = <&gpio2 3 GPIO_ACTIVE_LOW>;
         nwait-gpios = <&gpio2 31 0>;
@@ -135,7 +135,7 @@
 
             0x04c (PIN_OUTPUT_PULLUP | MUX_MODE4)   /* gpmc_a2.gpio_35 - nWRITE_STROBE */
             0x04a (PIN_OUTPUT_PULLUP | MUX_MODE4)   /* gpmc_a1.gpio_34 - nADDR_STROBE */
-            0x084 (PIN_OUTPUT_PULLUP | MUX_MODE4)   /* gpmc_ncs3.gpio_54 - nDATA_STROBE */
+            0x08e (PIN_OUTPUT_PULLUP | MUX_MODE4)   /* gpmc_clk.gpio_59 - nDATA_STROBE */
             0x09e (PIN_INPUT | MUX_MODE4)           /* gpmc_wait1.gpio_63 - nWAIT */
             0x110 (PIN_OUTPUT_PULLUP | MUX_MODE4)   /* mcbsp2_dr.gpio_118 - nFGPA_RESET */            
             0x098 (PIN_INPUT | MUX_MODE4)           /* gpmc_nbe1.gpio_61 - INTERRUPT */
