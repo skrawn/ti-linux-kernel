@@ -314,7 +314,7 @@
     pinctrl-0 = <&mcspi2_pins>;
 
     ksz8794@1 {
-        compatible = "spi-ks8995";
+        compatible = "ksz8794";
         spi-max-frequency = <50000000>;
         reg = <1>;
     };

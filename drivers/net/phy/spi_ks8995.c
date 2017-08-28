@@ -90,6 +90,7 @@
 #define CHIPID_M		0
 #define KS8995_CHIP_ID		0x00
 #define KSZ8864_CHIP_ID		0x01
+#define KSZ8794_CHIP_ID		0x06
 #define KSZ8795_CHIP_ID		0x09
 
 #define KS8995_CMD_WRITE	0x02U
@@ -100,6 +101,7 @@
 enum ks8995_chip_variant {
 	ks8995,
 	ksz8864,
+	ksz8794,
 	ksz8795,
 	max_variant
 };
@@ -130,6 +132,14 @@ static const struct ks8995_chip_params ks8995_chip[] = {
 		.addr_width = 8,
 		.addr_shift = 0,
 	},
+	[ksz8794] = {
+		.name = "KSZ8794CNX",
+		.family_id = FAMILY_KSZ8795,
+		.chip_id = KSZ8794_CHIP_ID,
+		.regs_size = KSZ8795_REGS_SIZE,
+		.addr_width = 12,
+		.addr_shift = 1,
+	},
 	[ksz8795] = {
 		.name = "KSZ8795CLX",
 		.family_id = FAMILY_KSZ8795,
@@ -157,6 +167,7 @@ struct ks8995_switch {
 static const struct spi_device_id ks8995_id[] = {
 	{"ks8995", ks8995},
 	{"ksz8864", ksz8864},
+	{"ksz8794", ksz8794},
 	{"ksz8795", ksz8795},
 	{ }
 };
@@ -506,7 +517,7 @@ static int ks8995_probe(struct spi_device *spi)
 	}
 
 	dev_info(&spi->dev, "%s device found, Chip ID:%x, Revision:%x\n",
-		 ks->chip->name, ks->chip->chip_id, ks->revision_id);
+		 ks->chip->name, ks->chip->chip_id, ks->revision_id);	
 
 	return 0;
 }
