@@ -662,58 +662,6 @@ static void __init fs5_am3517_dev_legacy_init(void)
 int fs5_analog_io_expander_setup(struct i2c_client *client, unsigned gpio,
     unsigned ngpio, void *context)
 {
-    int ret;
-    
-    ret = gpio_request(FS5_ANALOG_PWR_EN, "analog_pwr_en");
-    if (ret) {
-        printk(KERN_ERR "Failed to request analog_pwr_en\n");
-    }
-
-    ret = gpio_request(FS5_VNIR_LED_ENn, "vnir_led_enn");
-    if (ret) {
-        printk(KERN_ERR "Failed to request vnir_led_en\n");
-    }
-
-    ret = gpio_request(FS5_TEC1_EN, "tec1_en");
-    if (ret) {
-        printk(KERN_ERR "Failed to request tec1_en\n");
-    }
-
-    ret = gpio_request(FS5_TEC2_EN, "tec2_en");
-    if (ret) {
-        printk(KERN_ERR "Failed to request tec2_en\n");
-    }	
-
-    ret = gpio_request(FS5_TEC1_STATUS, "tec1_status");
-    if (ret) {
-        printk(KERN_ERR "Failed to request tec1_status\n");
-    }
-
-    ret = gpio_request(FS5_TEC2_STATUS, "tec2_status");
-    if (ret) {
-        printk(KERN_ERR "Failed to request tec2_status\n");
-    }
-
-    ret = gpio_request(FS5_USB0_OCn, "usb0_ocn");
-    if (ret) {
-        printk(KERN_ERR "Failed to request usb0_ocn\n");
-    }
-
-    ret = gpio_request(FS5_USB1_OCn, "usb1_ocn");
-    if (ret) {
-        printk(KERN_ERR "Failed to request usb1_ocn\n");
-    }
-
-    ret = gpio_request(FS5_ETH_RSTn, "eth_rstn");
-    if (ret) {
-        printk(KERN_ERR "Failed to request eth_rstn\n");
-    }
-
-    ret = gpio_request(FS5_STS_LED_EN, "sts_led_en");
-    if (ret) {
-        printk(KERN_ERR "Failed to request sts_led_en\n");
-    }
-
     gpio_direction_input(FS5_TEC1_STATUS);	
     gpio_direction_input(FS5_TEC2_STATUS);
     gpio_direction_input(FS5_USB0_OCn);
@@ -781,52 +729,6 @@ static struct pca953x_platform_data fs5_analog_expander_info = {
 int fs5_digital_io_expander_setup(struct i2c_client *client, unsigned gpio,
     unsigned ngpio, void *context)
 {
-    int ret;
-    
-    ret = gpio_request(FS5_ACCY_FLTn, "accy_fltn");
-    if (ret) {
-        printk(KERN_ERR "Failed to request accy_fltn\n");
-    }
-
-    ret = gpio_request(FS5_SWIR2_LED_ENn, "swir2_led_enn");
-    if (ret) {
-        printk(KERN_ERR "Failed to request swir2_led_enn\n");
-    }
-
-    ret = gpio_request(FS5_SWIR1_LED_ENn, "swir1_led_enn");
-    if (ret) {
-        printk(KERN_ERR "Failed to request swir1_led_enn\n");
-    }
-
-    ret = gpio_request(FS5_TRIG_LED_EN, "trig_led_en");
-    if (ret) {
-        printk(KERN_ERR "Failed to request trig_led_en\n");
-    }	
-
-    ret = gpio_request(FS5_ACCY_ENn, "fs5_accy_enn");
-    if (ret) {
-        printk(KERN_ERR "Failed to request fs5_accy_enn\n");
-    }
-
-    ret = gpio_request(FS5_MOTOR_EN, "fs5_motor_en");
-    if (ret) {
-        printk(KERN_ERR "Failed to request fs5_motor_en\n");
-    }
-
-    ret = gpio_request(FS5_LAMP_EN, "lamp_en");
-    if (ret) {
-        printk(KERN_ERR "Failed to request lamp_en\n");
-    }
-
-    ret = gpio_request(FS5_FAN_EN, "fan_en");
-    if (ret) {
-        printk(KERN_ERR "Failed to request fan_en\n");
-    }
-
-    ret = gpio_request(FS5_MOT_DIR_GPIO, "motor_dir_gpio");
-    if (ret) {
-        printk(KERN_ERR "Failed to request motor_dir_gpio\n");
-    }
 
     gpio_direction_input(FS5_ACCY_FLTn);	
 
