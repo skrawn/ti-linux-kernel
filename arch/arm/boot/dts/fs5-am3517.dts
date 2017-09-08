@@ -60,6 +60,16 @@
         nint3-gpios = <&gpio5 23 0>;
         nint-gpios = <&gpio2 29 0>;
     };
+
+    gps_pps: pps {
+        compatible = "pps-gpio";
+        gpios = <&gpio1 27 0>;
+
+        pinctrl-names = "default";
+        pinctrl-0 = <&gps_pps_pin>;
+
+        assert-falling-edge;
+    };
 };
 
 &omap3_pmx_wkup {
@@ -180,6 +190,14 @@
     motor_spd_pwm: pinmux_motor_spd {
         pinctrl-single,pins = <
             0x082 (PIN_OUTPUT | MUX_MODE2)           /* gpmc_ncs2.gpt9_pwm_evt - MOT_SPD_PWM */
+        >;
+    };
+};
+
+&omap3_pmx_core2 {
+    gps_pps_pin: pinmux_gps_pps {
+        pinctrl-single,pins = <
+            0x5c6 (PIN_INPUT | MUX_MODE4)           /* etk_d13.gpio_27 - GPS_PPS */
         >;
     };
 };
