@@ -805,6 +805,10 @@ static void __init fs5_am3517_legacy_init(void)
     gpio_direction_output(129, 0);
         msleep(1);
 
+    // GPS PPS needs to be set to an input to play nicely with the
+    // receiver
+    gpio_direction_input(27);
+
     // IRQ numbers are determined at runtime, so need to update the board info here	to 
     // associate these IO expanders with their GPIO interrupt lines.
     fs5_i2c2_boardinfo[0].irq = gpio_to_irq(116);
