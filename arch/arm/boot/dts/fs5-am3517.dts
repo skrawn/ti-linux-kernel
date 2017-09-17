@@ -336,28 +336,20 @@
 		#size-cells = <1>;
 
 		partition@0 {
-			label = "xloader";
-			reg = <0 0x80000>;
+			label = "MLO";
+			reg = <0 0x20000>;
 		};
-		partition@0x80000 {
+		partition@0x20000 {
 			label = "uboot";
-			reg = <0x80000 0x1e0000>;
+			reg = <0x20000 0x100000>;
 		};
-		partition@0x260000 {
-			label = "uboot environment";
-			reg = <0x260000 0x40000>;
+		partition@0x120000 {
+			label = "u-boot-env";
+			reg = <0x120000 0x40000>;
 		};
-		partition@0x2a0000 {
-			label = "linux";
-			reg = <0x2a0000 0x800000>;
-		};
-		partition@0xaa0000 {
-			label = "oftree";
-			reg = <0xaa0000 0x80000>;
-		};
-		partition@0xb20000 {
-			label = "rootfs";
-			reg = <0xb20000 0x1f4e0000>;
+		partition@0x160000 {
+			label = "ubi";
+			reg = <0x160000 0x1FEA0000>;
 		};
 	};
 
