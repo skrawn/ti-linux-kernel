@@ -391,7 +391,7 @@ static int ks8995_get_revision(struct ks8995_switch *ks)
 		}
 
 		if (get_chip_id(id1) == ks->chip->chip_id) {
-			ks->revision_id = get_chip_rev(id1);
+			ks->revision_id = get_chip_rev(id1);			
 		} else {
 			dev_err(&ks->spi->dev, "unsupported chip id for KSZ8795 family: 0x%02x\n",
 				id1);
@@ -424,16 +424,6 @@ static void ks8995_parse_dt(struct ks8995_switch *ks)
 	pdata->reset_gpio = of_get_named_gpio_flags(np, "reset-gpios", 0,
 		&pdata->reset_gpio_flags);
 }
-
-static const struct bin_attribute ks8995_registers_attr = {
-	.attr = {
-		.name   = "registers",
-		.mode   = S_IRUSR | S_IWUSR,
-	},
-	.size   = KS8995_REGS_SIZE,
-	.read   = ks8995_registers_read,
-	.write  = ks8995_registers_write,
-};
 
 /* ------------------------------------------------------------------------ */
 static int ks8995_probe(struct spi_device *spi)
@@ -501,9 +491,13 @@ static int ks8995_probe(struct spi_device *spi)
 	err = ks8995_get_revision(ks);
 	if (err)
 		return err;
-
+	
+	sysfs_bin_attr_init(&ks->regs_attr);
+	ks->regs_attr.attr.name = "registers";
+	ks->regs_attr.attr.mode = S_IRUSR | S_IWUSR;
+	ks->regs_attr.read = ks8995_registers_read;
+	ks->regs_attr.write = ks8995_registers_write;
 	ks->regs_attr.size = ks->chip->regs_size;
-	memcpy(&ks->regs_attr, &ks8995_registers_attr, sizeof(ks->regs_attr));
 
 	err = ks8995_reset(ks);
 	if (err)
