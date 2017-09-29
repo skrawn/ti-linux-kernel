@@ -61,7 +61,7 @@
         nint-gpios = <&gpio2 29 0>;
     };
 
-    gps_pps: pps {
+    gps_pps: gps_pps {
         compatible = "pps-gpio";
         gpios = <&gpio1 27 0>;
 
@@ -71,7 +71,7 @@
         assert-falling-edge;
     };
 
-    motor_speed: ti-gptcounter {
+    motor_speed: motor_speed {
         compatible = "ti-gptcounter";        
 
         pinctrl-names = "default";
@@ -207,7 +207,8 @@
 &omap3_pmx_core2 {
     gps_pps_pin: pinmux_gps_pps {
         pinctrl-single,pins = <
-            0x5c6 (PIN_INPUT | MUX_MODE4)           /* etk_d13.gpio_27 - GPS_PPS */
+            /* 0x25f6 - 0x25d8 = 0x01e */
+            0x01e (PIN_INPUT | MUX_MODE4)           /* etk_d13.gpio_27 - GPS_PPS */
         >;
     };
 };
