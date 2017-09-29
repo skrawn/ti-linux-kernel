@@ -478,6 +478,38 @@ int omap_dm_timer_stop(struct omap_dm_timer *timer)
 }
 EXPORT_SYMBOL_GPL(omap_dm_timer_stop);
 
+int omap_dm_timer_set_capture(struct omap_dm_timer *timer, int capture_mode, int edges)
+{
+	u32 reg;
+
+	if (unlikely(!timer))
+		return -EINVAL;
+
+	omap_dm_timer_enable(timer);
+	reg = omap_dm_timer_read_reg(timer, OMAP_TIMER_CTRL_REG);
+
+	if (capture_mode < OMAP_TIMER_CAPTURE_FIRST && capture_mode > OMAP_TIMER_CAPTURE_SECOND)
+		return -EINVAL;
+	if (edges < OMAP_TIMER_CAPTURE_RISING && edges > OMAP_TIMER_CAPTURE_BOTH)
+		return -EINVAL;
+
+	// Clear the bits we're about to change
+	reg &= ~(OMAP_TIMER_CTRL_GPOCFG | OMAP_TIMER_CTRL_CAPTMODE | OMAP_TIMER_CTRL_TCM_BOTHEDGES |
+		OMAP_TIMER_CTRL_AR);
+
+	reg |= OMAP_TIMER_CTRL_GPOCFG | 
+		(capture_mode << 13) |
+		(edges << 8) | 
+		OMAP_TIMER_CTRL_AR;
+
+	/* Save the context */
+	timer->context.tclr = reg;
+	omap_dm_timer_write_reg(timer, OMAP_TIMER_CTRL_REG, reg);
+	omap_dm_timer_disable(timer);
+	return 0;
+}
+EXPORT_SYMBOL_GPL(omap_dm_timer_set_capture);
+
 int omap_dm_timer_set_source(struct omap_dm_timer *timer, int source)
 {
 	int ret;
@@ -764,6 +796,23 @@ int omap_dm_timer_write_counter(struct omap_dm_timer *timer, unsigned int value)
 	return 0;
 }
 EXPORT_SYMBOL_GPL(omap_dm_timer_write_counter);
+
+unsigned int omap_dm_timer_read_capture(struct omap_dm_timer *timer, unsigned int reg)
+{
+	u32 cap = OMAP_TIMER_CAPTURE_REG;
+
+	if (unlikely(!timer || pm_runtime_suspended(&timer->pdev->dev))) {
+		pr_err("%s:  timer not available or enabled.\n", __func__);
+		return 0;
+	}
+
+	if (reg == 2) {
+		cap = OMAP_TIMER_CAPTURE2_REG;
+	}
+
+	return omap_dm_timer_read_reg(timer, cap);
+}
+EXPORT_SYMBOL_GPL(omap_dm_timer_read_capture);
 
 int omap_dm_timers_active(void)
 {

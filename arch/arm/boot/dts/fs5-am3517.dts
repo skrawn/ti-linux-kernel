@@ -70,6 +70,16 @@
 
         assert-falling-edge;
     };
+
+    motor_speed: ti-gptcounter {
+        compatible = "ti-gptcounter";        
+
+        pinctrl-names = "default";
+        pinctrl-0 = <&motor_fg>;
+
+        gptimer = <&timer10>;
+        pp-rev = <6>;
+    };
 };
 
 &omap3_pmx_wkup {

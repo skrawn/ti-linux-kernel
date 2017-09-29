@@ -56,7 +56,16 @@
 
 /* posted mode types */
 #define OMAP_TIMER_NONPOSTED			0x00
-#define OMAP_TIMER_POSTED			0x01
+#define OMAP_TIMER_POSTED				0x01
+
+/* capture mode types */
+#define OMAP_TIMER_CAPTURE_FIRST		0x0
+#define OMAP_TIMER_CAPTURE_SECOND		0x1
+
+/* capture edges */
+#define OMAP_TIMER_CAPTURE_RISING		0x1
+#define OMAP_TIMER_CAPTURE_FALLING		0x2
+#define OMAP_TIMER_CAPTURE_BOTH			0x3
 
 /* timer capabilities used in hwmod database */
 #define OMAP_TIMER_SECURE				0x80000000
@@ -142,6 +151,7 @@ int omap_dm_timer_trigger(struct omap_dm_timer *timer);
 int omap_dm_timer_start(struct omap_dm_timer *timer);
 int omap_dm_timer_stop(struct omap_dm_timer *timer);
 
+int omap_dm_timer_set_capture(struct omap_dm_timer *timer, int capture_mode, int edges);
 int omap_dm_timer_set_source(struct omap_dm_timer *timer, int source);
 int omap_dm_timer_set_load(struct omap_dm_timer *timer, int autoreload, unsigned int value);
 int omap_dm_timer_set_load_start(struct omap_dm_timer *timer, int autoreload, unsigned int value);
@@ -156,6 +166,8 @@ unsigned int omap_dm_timer_read_status(struct omap_dm_timer *timer);
 int omap_dm_timer_write_status(struct omap_dm_timer *timer, unsigned int value);
 unsigned int omap_dm_timer_read_counter(struct omap_dm_timer *timer);
 int omap_dm_timer_write_counter(struct omap_dm_timer *timer, unsigned int value);
+
+unsigned int omap_dm_timer_read_capture(struct omap_dm_timer *timer, unsigned int reg);
 
 int omap_dm_timers_active(void);
 
