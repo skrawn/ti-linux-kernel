@@ -800,10 +800,8 @@ static void __init fs5_am3517_legacy_init(void)
     usbhs_init(&usbhs_pdata);	
     
     /*Drive the output enable for WL1271 module low*/
-    gpio_export(129, 0);
-        udelay(10);
     gpio_direction_output(129, 0);
-        msleep(1);
+    msleep(1);
         
     // IRQ numbers are determined at runtime, so need to update the board info here	to 
     // associate these IO expanders with their GPIO interrupt lines.

@@ -43,6 +43,7 @@ struct ti_gptcounter {
     u32 motor_rpm;    
     u32 rev_start_time;
     u32 clk_hz;
+    bool enabled;
 };
 
 static irqreturn_t counter_irq_handler(int irq, void *dev_id)
@@ -90,20 +91,53 @@ static irqreturn_t counter_irq_handler(int irq, void *dev_id)
 }
 
 static ssize_t ti_gptcounter_get_rpm(struct device *dev, struct device_attribute *attr,
-    char *buf) {
+    char *buf) 
+{
     struct ti_gptcounter *counter = (struct ti_gptcounter *) dev_get_drvdata(dev);
     return sprintf(buf, "%d\n", counter->motor_rpm);
 }
 
 static ssize_t ti_gptcounter_show_name(struct device *dev, struct device_attribute *attr,
-    char *buf) {
+    char *buf) 
+{
     return sprintf(buf, "%s\n", DRIVER_NAME);
 }
 
+static ssize_t ti_gptcounter_enable(struct device *dev, struct device_attribute *attr, 
+    const char *buf, size_t count) 
+{
+    unsigned long val;
+    int ret;
+    struct ti_gptcounter *counter;
+
+    ret = kstrtoul(buf, 0, &val);
+    if (ret)
+        return ret;
+    counter = (struct ti_gptcounter *) dev_get_drvdata(dev);
+    if (val) {
+        omap_dm_timer_start(counter->gptimer);
+        counter->enabled = true;
+    } else {
+        omap_dm_timer_stop(counter->gptimer);
+        counter->enabled = false;
+    }
+
+    return count;
+}
+
+static ssize_t ti_gptcounter_show_enable(struct device *dev, struct device_attribute *attr,
+    char *buf)
+{
+    struct ti_gptcounter *counter = (struct ti_gptcounter *) dev_get_drvdata(dev);
+    return sprintf(buf, "%d\n", counter->enabled);
+}
+
+static DEVICE_ATTR(enable, S_IWUSR | S_IRUGO, ti_gptcounter_show_enable, ti_gptcounter_enable);
 static DEVICE_ATTR(rpm, S_IRUGO, ti_gptcounter_get_rpm, NULL);
 static DEVICE_ATTR(name, S_IRUGO, ti_gptcounter_show_name, NULL);
 
 static struct attribute *ti_gptcounter_attributes[] = {    
+    &dev_attr_enable.attr,
     &dev_attr_rpm.attr,
     &dev_attr_name.attr,
     NULL
@@ -209,11 +243,10 @@ static int ti_gptcounter_probe(struct platform_device *pdev)
 
     err = sysfs_create_group(&pdev->dev.kobj, &ti_gptcounter_group);
 
-    counter->rev_start_time = 0;    
+    counter->rev_start_time = 0;
+    counter->enabled = false;
 
     platform_set_drvdata(pdev, counter);
-
-    omap_dm_timer_start(counter->gptimer);
 
     return 0;
 
