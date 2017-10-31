@@ -672,7 +672,7 @@ int fs5_analog_io_expander_setup(struct i2c_client *client, unsigned gpio,
     gpio_direction_output(FS5_TEC1_EN, 1);
     gpio_direction_output(FS5_TEC2_EN, 1);
     gpio_direction_output(FS5_ETH_RSTn, 1);
-    gpio_direction_output(FS5_STS_LED_EN, 0);
+    gpio_direction_output(FS5_STS_LED_EN, 1);
 
     return 0;
 }
@@ -685,7 +685,7 @@ int fs5_analog_io_expander_teardown(struct i2c_client *client, unsigned gpio,
     gpio_set_value(FS5_TEC1_EN, 0);
     gpio_set_value(FS5_TEC2_EN, 0);
     gpio_set_value(FS5_ETH_RSTn, 1);
-    gpio_set_value(FS5_STS_LED_EN, 0);
+    gpio_set_value(FS5_STS_LED_EN, 1);
 
     gpio_free(FS5_TEC1_STATUS);	
     gpio_free(FS5_TEC2_STATUS);
@@ -734,7 +734,7 @@ int fs5_digital_io_expander_setup(struct i2c_client *client, unsigned gpio,
 
     gpio_direction_output(FS5_SWIR2_LED_ENn, 1);
     gpio_direction_output(FS5_SWIR1_LED_ENn, 1);
-    gpio_direction_output(FS5_TRIG_LED_EN, 0);
+    gpio_direction_output(FS5_TRIG_LED_EN, 1);
     gpio_direction_output(FS5_ACCY_ENn, 1);
     gpio_direction_output(FS5_MOTOR_EN, 1);
     gpio_direction_output(FS5_LAMP_EN, 0);
@@ -749,7 +749,7 @@ int fs5_digital_io_expander_teardown(struct i2c_client *client, unsigned gpio,
 {
     gpio_set_value(FS5_SWIR2_LED_ENn, 1);
     gpio_set_value(FS5_SWIR1_LED_ENn, 1);
-    gpio_set_value(FS5_TRIG_LED_EN, 0);
+    gpio_set_value(FS5_TRIG_LED_EN, 1);
     gpio_set_value(FS5_ACCY_ENn, 1);
     gpio_set_value(FS5_MOTOR_EN, 0);
     gpio_set_value(FS5_LAMP_EN, 0);

@@ -93,6 +93,9 @@
 };
 
 &omap3_pmx_core {
+    pinctrl-names = "default";
+    pinctrl-0 = <&trigger>, <&optimize>;
+
     otg_drv_vbus: pinmux_otg_drv_vbus {
         pinctrl-single,pins = <
             0x212 (PIN_OUTPUT | MUX_MODE0)  /* usb0_drvvbus.usb0_drvvbus */
@@ -202,13 +205,34 @@
             0x082 (PIN_OUTPUT | MUX_MODE2)           /* gpmc_ncs2.gpt9_pwm_evt - MOT_SPD_PWM */
         >;
     };
+
+    trigger: pinmux_trigger {
+        pinctrl-single,pins = <
+            0x1b0 (PIN_INPUT | MUX_MODE4)           /* sys_nirq.gpio_0 - TRIGGER */
+        >;
+    };
+
+    optimize: pinmux_optimize {
+        pinctrl-single,pins = <
+            0x1e4 (PIN_INPUT | MUX_MODE4)           /* hecc1_txd.gpio_130 - OPTIMIZE */
+        >;
+    };
 };
 
 &omap3_pmx_core2 {
+    pinctrl-names = "default";
+    pinctrl-0 = <&white_ref>;
+
     gps_pps_pin: pinmux_gps_pps {
         pinctrl-single,pins = <
             /* 0x25f6 - 0x25d8 = 0x01e */
             0x01e (PIN_INPUT | MUX_MODE4)           /* etk_d13.gpio_27 - GPS_PPS */
+        >;
+    };
+
+    white_ref: pinmux_white_ref {
+        pinctrl-single,pins = <
+            0x020 (PIN_INPUT | MUX_MODE4)           /* etk_d14.gpio_28 - WHT_REF */
         >;
     };
 };
