@@ -78,7 +78,7 @@
         pinctrl-0 = <&motor_fg>;
 
         gptimer = <&timer10>;
-        pp-rev = <6>;
+        pp-rev = <2>;
     };
 };
 

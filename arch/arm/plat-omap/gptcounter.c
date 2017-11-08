@@ -33,7 +33,8 @@
 
 #define COUNTER_CLASS   "ti-gptcounter"
 
-#define TIMER_MAX_VALUE 0xffffffff
+#define FILTER_SIZE             5
+#define NUM_AVERAGES            50
 
 struct ti_gptcounter {
     struct omap_dm_timer *gptimer;
@@ -41,8 +42,10 @@ struct ti_gptcounter {
     u8 pulse_per_rev;
     u8 pulse_counter;
     u32 motor_rpm;    
-    u32 rev_start_time;
+    u32 rev_start_time;    
     u32 clk_hz;
+    u32 avg_sum;
+    u32 sum_count;
     bool enabled;
 };
 
@@ -51,8 +54,7 @@ static irqreturn_t counter_irq_handler(int irq, void *dev_id)
     struct ti_gptcounter *counter = (struct ti_gptcounter *) dev_id;
     unsigned long rev_end_time;
     unsigned long time_diff;
-    unsigned int retval;    
-    u32 ms_per_rev;
+    unsigned int retval;
 
     retval = omap_dm_timer_read_status(counter->gptimer);    
     if (!retval)
@@ -62,18 +64,18 @@ static irqreturn_t counter_irq_handler(int irq, void *dev_id)
     omap_dm_timer_write_status(counter->gptimer, 
         OMAP_TIMER_INT_MATCH	|
         OMAP_TIMER_INT_OVERFLOW	|
-        OMAP_TIMER_INT_CAPTURE);    
+        OMAP_TIMER_INT_CAPTURE);
 
     if (counter->pulse_per_rev % 2)
         counter->pulse_counter++;
     else
         counter->pulse_counter += 2;
-    
-    if (counter->pulse_per_rev == counter->pulse_counter) {        
+
+    if (counter->pulse_counter >= counter->pulse_per_rev) {
         if (counter->pulse_per_rev % 2)
-            rev_end_time = omap_dm_timer_read_capture(counter->gptimer, 1);                    
+            rev_end_time = omap_dm_timer_read_capture(counter->gptimer, 1);
         else
-            rev_end_time = omap_dm_timer_read_capture(counter->gptimer, 2);            
+            rev_end_time = omap_dm_timer_read_capture(counter->gptimer, 2);
 
         // Handle rollover
         if (rev_end_time < counter->rev_start_time) {
@@ -81,9 +83,16 @@ static irqreturn_t counter_irq_handler(int irq, void *dev_id)
         } else {
             time_diff = rev_end_time - counter->rev_start_time;
         }        
-        counter->rev_start_time = omap_dm_timer_read_counter(counter->gptimer);        
-        ms_per_rev = (u32) ((time_diff * 1000) / counter->clk_hz);
-        counter->motor_rpm = ms_per_rev * 1000 / 60;
+        counter->rev_start_time = rev_end_time;
+                
+        counter->avg_sum += (u32) (((counter->clk_hz * 1000) / time_diff) * 60 / 1000);
+        counter->sum_count++;
+        if (counter->sum_count >= NUM_AVERAGES) {
+            counter->motor_rpm = counter->avg_sum / NUM_AVERAGES;
+            counter->sum_count = 0;
+            counter->avg_sum = 0;
+        }
+
         counter->pulse_counter = 0;
     }
 
@@ -120,7 +129,7 @@ static ssize_t ti_gptcounter_enable(struct device *dev, struct device_attribute 
     } else {
         omap_dm_timer_stop(counter->gptimer);
         counter->enabled = false;
-    }
+    }    
 
     return count;
 }
@@ -206,14 +215,14 @@ static int ti_gptcounter_probe(struct platform_device *pdev)
         goto exit_free_mem;
     }
 
-    // Set clock source to system clock    
-    omap_dm_timer_set_source(counter->gptimer, OMAP_TIMER_SRC_32_KHZ);
+    // Set clock source to system clock
+    omap_dm_timer_set_source(counter->gptimer, OMAP_TIMER_SRC_SYS_CLK);
 
-    // Use 1:1 prescalar
-    omap_dm_timer_set_prescaler(counter->gptimer, 0);    
+    // Use 1:256 prescalar
+    omap_dm_timer_set_prescaler(counter->gptimer, 7);
 
     clk_fclk = omap_dm_timer_get_fclk(counter->gptimer);
-    counter->clk_hz = clk_get_rate(clk_fclk);
+    counter->clk_hz = clk_get_rate(clk_fclk) / 256;
 
     irq = omap_dm_timer_get_irq(counter->gptimer);
 
@@ -230,7 +239,7 @@ static int ti_gptcounter_probe(struct platform_device *pdev)
         capture_pulses = OMAP_TIMER_CAPTURE_SECOND;
 
     omap_dm_timer_set_capture(counter->gptimer, capture_pulses, 
-        OMAP_TIMER_CAPTURE_RISING);
+        OMAP_TIMER_CAPTURE_FALLING);
 
         // Clear the interrupt flags
     omap_dm_timer_write_status(counter->gptimer, 
@@ -245,6 +254,8 @@ static int ti_gptcounter_probe(struct platform_device *pdev)
 
     counter->rev_start_time = 0;
     counter->enabled = false;
+    counter->avg_sum = 0;
+    counter->sum_count = 0;
 
     platform_set_drvdata(pdev, counter);
 
