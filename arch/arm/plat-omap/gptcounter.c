@@ -34,17 +34,17 @@
 #define COUNTER_CLASS   "ti-gptcounter"
 
 #define FILTER_SIZE             5
-#define NUM_AVERAGES            50
 
 struct ti_gptcounter {
     struct omap_dm_timer *gptimer;
-    struct device *dev;    
+    struct device *dev;
     u8 pulse_per_rev;
     u8 pulse_counter;
-    u32 motor_rpm;    
-    u32 rev_start_time;    
+    u32 speed_filter[FILTER_SIZE];
+    u8 filter_index;
+    u32 motor_rpm;
+    u32 rev_start_time;
     u32 clk_hz;
-    u32 avg_sum;
     u32 sum_count;
     bool enabled;
 };
@@ -55,6 +55,8 @@ static irqreturn_t counter_irq_handler(int irq, void *dev_id)
     unsigned long rev_end_time;
     unsigned long time_diff;
     unsigned int retval;
+    unsigned int i;
+    unsigned int sum;
 
     retval = omap_dm_timer_read_status(counter->gptimer);    
     if (!retval)
@@ -84,13 +86,19 @@ static irqreturn_t counter_irq_handler(int irq, void *dev_id)
             time_diff = rev_end_time - counter->rev_start_time;
         }        
         counter->rev_start_time = rev_end_time;
-                
-        counter->avg_sum += (u32) (((counter->clk_hz * 1000) / time_diff) * 60 / 1000);
-        counter->sum_count++;
-        if (counter->sum_count >= NUM_AVERAGES) {
-            counter->motor_rpm = counter->avg_sum / NUM_AVERAGES;
-            counter->sum_count = 0;
-            counter->avg_sum = 0;
+
+        if (time_diff > 0) {
+            counter->speed_filter[counter->filter_index] = (u32) (((counter->clk_hz * 1000) / time_diff) * 60 / 1000);
+            counter->filter_index = (counter->filter_index + 1) % FILTER_SIZE;
+            if (counter->sum_count < FILTER_SIZE) {
+                counter->sum_count++;
+            }
+
+            for (i = 0; i < counter->sum_count; i++) {
+                sum += counter->speed_filter[i];
+            }
+
+            counter->motor_rpm = sum / counter->sum_count;
         }
 
         counter->pulse_counter = 0;
@@ -124,7 +132,12 @@ static ssize_t ti_gptcounter_enable(struct device *dev, struct device_attribute 
         return ret;
     counter = (struct ti_gptcounter *) dev_get_drvdata(dev);
     if (val) {
+        counter->filter_index = 0;
+        memset(counter->speed_filter, 0, sizeof(counter->speed_filter));
+        counter->sum_count = 0;
+        counter->pulse_counter = 0;
         omap_dm_timer_start(counter->gptimer);
+        omap_dm_timer_write_counter(counter->gptimer, 0);
         counter->enabled = true;
     } else {
         omap_dm_timer_stop(counter->gptimer);
@@ -251,11 +264,6 @@ static int ti_gptcounter_probe(struct platform_device *pdev)
     omap_dm_timer_set_int_enable(counter->gptimer, OMAP_TIMER_INT_CAPTURE);
 
     err = sysfs_create_group(&pdev->dev.kobj, &ti_gptcounter_group);
-
-    counter->rev_start_time = 0;
-    counter->enabled = false;
-    counter->avg_sum = 0;
-    counter->sum_count = 0;
 
     platform_set_drvdata(pdev, counter);
 
