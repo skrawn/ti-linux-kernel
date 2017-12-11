@@ -56,11 +56,14 @@ static irqreturn_t counter_irq_handler(int irq, void *dev_id)
     unsigned long time_diff;
     unsigned int retval;
     unsigned int i;
-    unsigned int sum;
+    unsigned int sum = 0;
 
-    retval = omap_dm_timer_read_status(counter->gptimer);    
-    if (!retval)
+    retval = omap_dm_timer_read_status(counter->gptimer);
+    if (!retval) {
+        if (counter->gptimer)
+            omap_dm_timer_set_int_disable(counter->gptimer, OMAP_TIMER_INT_CAPTURE);
         return IRQ_NONE;
+    }
 
     // Clear the interrupt flags
     omap_dm_timer_write_status(counter->gptimer, 
@@ -136,10 +139,12 @@ static ssize_t ti_gptcounter_enable(struct device *dev, struct device_attribute 
         memset(counter->speed_filter, 0, sizeof(counter->speed_filter));
         counter->sum_count = 0;
         counter->pulse_counter = 0;
+        omap_dm_timer_set_int_enable(counter->gptimer, OMAP_TIMER_INT_CAPTURE);
         omap_dm_timer_start(counter->gptimer);
         omap_dm_timer_write_counter(counter->gptimer, 0);
         counter->enabled = true;
     } else {
+        omap_dm_timer_set_int_disable(counter->gptimer, OMAP_TIMER_INT_CAPTURE);
         omap_dm_timer_stop(counter->gptimer);
         counter->enabled = false;
     }    
@@ -254,7 +259,7 @@ static int ti_gptcounter_probe(struct platform_device *pdev)
     omap_dm_timer_set_capture(counter->gptimer, capture_pulses, 
         OMAP_TIMER_CAPTURE_FALLING);
 
-        // Clear the interrupt flags
+    // Clear the interrupt flags
     omap_dm_timer_write_status(counter->gptimer, 
         OMAP_TIMER_INT_MATCH	|
         OMAP_TIMER_INT_OVERFLOW	|
