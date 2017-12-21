@@ -119,7 +119,7 @@ static int ad7298_update_scan_mode(struct iio_dev *indio_dev,
 		if (test_bit(i, active_scan_mask))
 			command |= m;
 
-	st->tx_buf[0] = cpu_to_be16(command);
+	st->tx_buf[0] = command;
 
 	/* build spi ring message */
 	st->ring_xfer[0].tx_buf = &st->tx_buf[0];
@@ -174,14 +174,14 @@ done:
 static int ad7298_scan_direct(struct ad7298_state *st, unsigned ch)
 {
 	int ret;
-	st->tx_buf[0] = cpu_to_be16(AD7298_WRITE | st->ext_ref |
-				   (AD7298_CH(0) >> ch));
+	st->tx_buf[0] = AD7298_WRITE | st->ext_ref |
+	 			   (AD7298_CH(0) >> ch);
 
 	ret = spi_sync(st->spi, &st->scan_single_msg);
 	if (ret)
 		return ret;
 
-	return be16_to_cpu(st->rx_buf[0]);
+	return st->rx_buf[0];
 }
 
 static int ad7298_scan_temp(struct ad7298_state *st, int *val)
@@ -189,8 +189,8 @@ static int ad7298_scan_temp(struct ad7298_state *st, int *val)
 	int ret;
 	__be16 buf;
 
-	buf = cpu_to_be16(AD7298_WRITE | AD7298_TSENSE |
-			  AD7298_TAVG | st->ext_ref);
+	buf = AD7298_WRITE | AD7298_TSENSE |
+			  AD7298_TAVG | st->ext_ref;
 
 	ret = spi_write(st->spi, (u8 *)&buf, 2);
 	if (ret)
@@ -208,7 +208,7 @@ static int ad7298_scan_temp(struct ad7298_state *st, int *val)
 	if (ret)
 		return ret;
 
-	*val = sign_extend32(be16_to_cpu(buf), 11);
+	*val = sign_extend32(buf, 11);
 
 	return 0;
 }
@@ -309,6 +309,12 @@ static int ad7298_probe(struct spi_device *spi)
 			return ret;
 	}
 
+	spi->bits_per_word = 16;
+	ret = spi_setup(spi);
+	if (ret) {
+		printk(KERN_ERR "ad7298_probe: spi master doesn't support 16 bits/word\n");
+	}
+
 	spi_set_drvdata(spi, indio_dev);
 
 	st->spi = spi;
@@ -330,6 +336,7 @@ static int ad7298_probe(struct spi_device *spi)
 	st->scan_single_xfer[1].cs_change = 1;
 	st->scan_single_xfer[2].rx_buf = &st->rx_buf[0];
 	st->scan_single_xfer[2].len = 2;
+	st->scan_single_xfer[2].cs_change = 1;
 
 	spi_message_init(&st->scan_single_msg);
 	spi_message_add_tail(&st->scan_single_xfer[0], &st->scan_single_msg);

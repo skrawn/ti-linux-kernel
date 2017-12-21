@@ -525,7 +525,7 @@ static struct spi_board_info fs5_dev_adc_board_info[] __initdata = {
         .max_speed_hz = 20000000,
         .bus_num = 1,
         .chip_select = 2,
-        .mode = SPI_MODE_1,
+        .mode = SPI_MODE_2,
         .controller_data = &adc_controller_data,
     }
 };
@@ -536,7 +536,7 @@ static struct spi_board_info fs5_adc_board_info[] __initdata = {
         .max_speed_hz = 20000000,
         .bus_num = 1,
         .chip_select = 0,
-        .mode = SPI_MODE_1,
+        .mode = SPI_MODE_2,
         .controller_data = &adc_controller_data,
     },
     {
@@ -544,7 +544,7 @@ static struct spi_board_info fs5_adc_board_info[] __initdata = {
         .max_speed_hz = 20000000,
         .bus_num = 1,
         .chip_select = 1,
-        .mode = SPI_MODE_1,
+        .mode = SPI_MODE_2,
         .controller_data = &adc_controller_data,
     },
     {
@@ -552,7 +552,7 @@ static struct spi_board_info fs5_adc_board_info[] __initdata = {
         .max_speed_hz = 20000000,
         .bus_num = 1,
         .chip_select = 2,
-        .mode = SPI_MODE_1,
+        .mode = SPI_MODE_2,
         .controller_data = &adc_controller_data,
     }
 };
