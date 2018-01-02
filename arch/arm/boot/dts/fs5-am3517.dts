@@ -294,29 +294,13 @@
 };
 
 &i2c2 {
-	clock-frequency = <100000>;
-
     pinctrl-names = "default";
     pinctrl-0 = <&i2c2_pins>;
-
-    status = "okay";
-
-    battery: sbs-battery@b {
-        compatible = "ti,bq20z65", "sbs,sbs-battery";
-        reg = <0xb>;
-        battery-name = "battery";
-        sbs,poll-retry-count = <2>;
-        sbs,i2c-retry-count = <100>;
-    };
 };
 
 &i2c3 {
-	clock-frequency = <400000>;
-
     pinctrl-names = "default";
     pinctrl-0 = <&i2c3_pins>;
-
-    status = "okay";
 };
 
 &uart1 {

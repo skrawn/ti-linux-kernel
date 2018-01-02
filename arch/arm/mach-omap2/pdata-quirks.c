@@ -18,6 +18,7 @@
 #include <linux/spectro.h>
 #include <linux/mmc/card.h>
 #include <linux/mmc/host.h>
+#include <linux/power/sbs-battery.h>
 #include <linux/regulator/machine.h>
 #include <linux/regulator/fixed.h>
 #include <linux/spi/spi.h>
@@ -776,6 +777,11 @@ static struct pca953x_platform_data fs5_digital_expander_info = {
     .teardown = fs5_digital_io_expander_teardown,
 };
 
+static struct sbs_platform_data battery_info = {
+    .i2c_retry_count = 100,
+    .poll_retry_count = 2
+};
+
 static struct i2c_board_info __initdata fs5_i2c2_boardinfo[] = {
     {
         I2C_BOARD_INFO("tca6416", 0x20),
@@ -784,6 +790,13 @@ static struct i2c_board_info __initdata fs5_i2c2_boardinfo[] = {
     {
         I2C_BOARD_INFO("tca6416", 0x21),
         .platform_data = &fs5_digital_expander_info,
+    }
+};
+
+static struct i2c_board_info __initdata fs5_i2c3_boardinfo[] = {
+    {
+        I2C_BOARD_INFO("sbs-battery", 0xb),
+        .platform_data = &battery_info
     }
 };
 
@@ -808,8 +821,11 @@ static void __init fs5_am3517_legacy_init(void)
     fs5_i2c2_boardinfo[0].irq = gpio_to_irq(116);
     fs5_i2c2_boardinfo[1].irq = gpio_to_irq(117);
 
-    omap_register_i2c_bus(2, 100, fs5_i2c2_boardinfo,
-        ARRAY_SIZE(fs5_i2c2_boardinfo));	
+    omap_register_i2c_bus(2, 400, fs5_i2c2_boardinfo,
+        ARRAY_SIZE(fs5_i2c2_boardinfo));
+
+    omap_register_i2c_bus(3, 100, fs5_i2c3_boardinfo,
+        ARRAY_SIZE(fs5_i2c3_boardinfo));
 
     spi_register_board_info(fs5_adc_board_info, ARRAY_SIZE(fs5_adc_board_info));
 }
