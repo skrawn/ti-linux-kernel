@@ -33,7 +33,7 @@
 
 #define COUNTER_CLASS   "ti-gptcounter"
 
-#define FILTER_SIZE             5
+#define FILTER_SIZE             10
 
 struct ti_gptcounter {
     struct omap_dm_timer *gptimer;
@@ -159,14 +159,22 @@ static ssize_t ti_gptcounter_show_enable(struct device *dev, struct device_attri
     return sprintf(buf, "%d\n", counter->enabled);
 }
 
+static ssize_t ti_gptcounter_show_clk_hz(struct device *dev, struct device_attribute *attr, char *buf) 
+{
+    struct ti_gptcounter *counter = (struct ti_gptcounter *) dev_get_drvdata(dev);
+    return sprintf(buf, "%d\n", counter->clk_hz);
+}
+
 static DEVICE_ATTR(enable, S_IWUSR | S_IRUGO, ti_gptcounter_show_enable, ti_gptcounter_enable);
 static DEVICE_ATTR(rpm, S_IRUGO, ti_gptcounter_get_rpm, NULL);
 static DEVICE_ATTR(name, S_IRUGO, ti_gptcounter_show_name, NULL);
+static DEVICE_ATTR(clk_hz, S_IRUGO, ti_gptcounter_show_clk_hz, NULL);
 
 static struct attribute *ti_gptcounter_attributes[] = {    
     &dev_attr_enable.attr,
     &dev_attr_rpm.attr,
     &dev_attr_name.attr,
+    &dev_attr_clk_hz.attr,
     NULL
 };
 
