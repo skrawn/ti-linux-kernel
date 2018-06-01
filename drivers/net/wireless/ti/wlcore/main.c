@@ -6446,7 +6446,10 @@ static void wlcore_nvs_cb(const struct firmware *fw, void *context)
 		wl->nvs = kmemdup(fw->data, fw->size, GFP_KERNEL);
 
 		//Retreive MAC Address from EEPROM
-		omap3logic_extract_old_wifi_ethaddr(mac);
+		// ASDFST-112 - The Logic PD code is messed up here. The Ethernet MAC address
+		// (the one stored in the AM3517 CONTROL_FUSE_EMAC register) is coming back 
+		// as the WiFi MAC address in the EEPROM on the AM3517 SOM. 
+		omap3logic_extract_lan_ethaddr(mac);
 		//Assign MAC address in reverse endianess
 		((u8*)wl->nvs)[3] = mac[5];
 		((u8*)wl->nvs)[4] = mac[4];

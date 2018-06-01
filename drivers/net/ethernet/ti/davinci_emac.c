@@ -73,6 +73,8 @@
 
 #include "cpsw.h"
 #include "davinci_cpdma.h"
+#include "../../wireless/ti/wlcore/productid_files/board-omap3logic.h"
+#include "../../wireless/ti/wlcore/productid_files/omap3logic-old-productid.h"
 
 static int debug_level;
 module_param(debug_level, int, 0);
@@ -2032,11 +2034,17 @@ static int davinci_emac_probe(struct platform_device *pdev)
 		ether_addr_copy(ndev->dev_addr, priv->mac_addr);
 
 	if (!is_valid_ether_addr(priv->mac_addr)) {
-		/* Use random MAC if none passed */
-		eth_hw_addr_random(ndev);
-		memcpy(priv->mac_addr, ndev->dev_addr, ndev->addr_len);
-		dev_warn(&pdev->dev, "using random MAC addr: %pM\n",
-							priv->mac_addr);
+		// ASDFST-112 - The logic PD code is messed up here. The Ethernet MAC address
+		// (the one stored in the AM3517 CONTROL_FUSE_EMAC register) is coming back 
+		// as the WiFi MAC address in the EEPROM on the AM3517 SOM. 
+		omap3logic_extract_old_wifi_ethaddr(priv->mac_addr);
+		if (!is_valid_ether_addr(priv->mac_addr)) {
+			/* Use random MAC if none passed */
+			eth_hw_addr_random(ndev);
+			memcpy(priv->mac_addr, ndev->dev_addr, ndev->addr_len);
+			dev_warn(&pdev->dev, "using random MAC addr: %pM\n",
+								priv->mac_addr);
+		}
 	}
 
 	ndev->netdev_ops = &emac_netdev_ops;
